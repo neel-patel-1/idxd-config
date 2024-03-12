@@ -23,6 +23,7 @@ static int umwait_support;
 
 struct fileTracker calgaryTracker = {
 	.f = NULL,
+	.fBuf = NULL,
 	.offset = 0
 };
 
@@ -385,8 +386,25 @@ int acctest_wait_on_desc_timeout(struct completion_record *comp,
 
 
 void memset_calgary(void *dst, size_t len){
-	calgaryTracker.f = fopen(CALGARY, "r");
-	info("Calgary offset: %d\n", calgaryTracker.offset);
+	if(calgaryTracker.fBuf == NULL){
+		calgaryTracker.f = fopen(CALGARY, "r");
+		calgaryTracker.fBuf = malloc(len);
+		info("Calgary open\n");
+	}
+	uint64_t readLen =
+		fread((void *)calgaryTracker.fBuf,
+			1, len, calgaryTracker.f);
+	calgaryTracker.offset += readLen;
+	if (readLen < len){
+		info("Calgary rewind\n");
+		rewind(calgaryTracker.f);
+		calgaryTracker.offset = 0;
+		readLen =
+			fread((void *)calgaryTracker.fBuf,
+				1, len, calgaryTracker.f);
+	}
+
+
 }
 
 /* the pattern is 8 bytes long while the dst can with any length */

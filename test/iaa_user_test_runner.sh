@@ -20,7 +20,7 @@ fi
 echo "$IAA"
 WQ0=wq1.4
 WQ1=wq1.1
-DBDF=`ls -l /sys/bus/dsa/devices/iax3 | awk -F '/' '{print $(NF - 1)}'`
+DBDF=`ls -l /sys/bus/dsa/devices/iax1 | awk -F '/' '{print $(NF - 1)}'`
 VENDOR_ID=`lspci -n -s ${DBDF} | awk -F ' ' '{print $NF}' | awk -F ':' '{print $1}'`
 DEVICE_ID=`lspci -n -s ${DBDF} | awk -F ' ' '{print $NF}' | awk -F ':' '{print $2}'`
 VFIO_BINDED=0
@@ -91,6 +91,7 @@ start_iaa()
 	configurable=$(cat /sys/bus/dsa/devices/$IAA/configurable)
 	if [ "$configurable" ]; then
 		"$ACCFG" load-config -c "$CONFIG2"
+		echo "Config 2 is: $CONFIG2"
 	fi
 	"$ACCFG" enable-device "$IAA"
 }

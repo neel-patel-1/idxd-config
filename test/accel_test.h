@@ -175,6 +175,7 @@ struct acctest_context {
 #define CALGARY "/lib/firmware/calgary"
 struct fileTracker{
 	FILE *f;
+	uint8_t *fBuf;
 	int offset;
 };
 extern struct fileTracker calgaryTracker;

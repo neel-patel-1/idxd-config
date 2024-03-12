@@ -699,22 +699,18 @@ int main(int argc, char *argv[])
 	case IAX_OPCODE_ZDECOMPRESS16:
 	case IAX_OPCODE_ZCOMPRESS32:
 	case IAX_OPCODE_ZDECOMPRESS32:
-		for(int i = 0; i < num_iter; i++) {
-			rc = test_zcompress(iaa, buf_size, tflags, opcode, num_desc);
-			if (rc != ACCTEST_STATUS_OK)
-				goto error;
-		}
+		rc = test_zcompress(iaa, buf_size, tflags, opcode, num_desc);
+		if (rc != ACCTEST_STATUS_OK)
+			goto error;
 		print_stats(num_iter);
 		break;
 
 	case IAX_OPCODE_COMPRESS:
 	case IAX_OPCODE_DECOMPRESS:
-		for(int i = 0; i < num_iter; i++) {
-			rc = test_compress(iaa, buf_size, tflags, extra_flags_1, opcode, num_desc);
-			if (rc != ACCTEST_STATUS_OK)
-				goto error;
-		}
-		print_stats(num_iter);
+		rc = test_compress(iaa, buf_size, tflags, extra_flags_1, opcode, num_desc);
+		if (rc != ACCTEST_STATUS_OK)
+			goto error;
+		print_stats(num_desc);
 		break;
 
 	case IAX_OPCODE_SCAN:
@@ -730,7 +726,7 @@ int main(int argc, char *argv[])
 			if (rc != ACCTEST_STATUS_OK)
 				goto error;
 		}
-		print_stats(num_iter);
+		print_stats(num_desc);
 		break;
 	case IAX_OPCODE_TRANSL_FETCH:
 		rc = test_transl_fetch(iaa, buf_size, tflags, opcode, num_desc, do_map);

@@ -281,7 +281,8 @@ static int init_decompress(struct task *tsk, int tflags, int opcode, unsigned lo
 	tsk->input = aligned_alloc(32, src1_xfer_size);
 	if (!tsk->input)
 		return -ENOMEM;
-	memset_pattern(tsk->input, tsk->pattern, src1_xfer_size);
+	// memset_pattern(tsk->input, tsk->pattern, src1_xfer_size);
+	memset_calgary(tsk->input, src1_xfer_size);
 
 	tsk->src1 = aligned_alloc(32, IAA_DECOMPRESS_MAX_DEST_SIZE);
 	if (!tsk->src1)

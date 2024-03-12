@@ -1,5 +1,49 @@
+Latency Breakdown
+=====
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L208
+- alloc work desc
+
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1483
+- populate decomp work desc
+
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1494
+- submit work desc
+
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1504
+- wait for completion
+-   calls umonitor (https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L322) on the address of the completion record
+-   calls umwait (https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L327) on the address of the completion record
+
+To Test:
+- chaining hw vs. sw support: https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa_test.c#L374
+- support for decompress and scan: https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1618
+
+
+Run
+=====
+#/home/n869p538/spr-accel-profiling/interrupt_qat_dc/idxd-config/test
+sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 2 -o0x42 | tee log.1
+grep -v -e'info' -e'Start' log.* | grep -e decomp | awk -F: '{printf("%s,%s\n",$2,$3);}'
+
+Source 2 purpose? https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L293
+- is it used for decomp test
+
+How many times run?
+1000
+
+Num Descs parameter impact?
+
+
+compress, get ratio, decompress get latency
+
+block_on_fault?
+
 #accel-config test
 
+
+
+Old:
+=====
 The test command is an option to test all the library code of accel-config,
 including set and get libaccfg functions for all components in dsa device, set
 large wq to exceed max total size in dsa.
