@@ -22,8 +22,12 @@ To Test:
 Run
 =====
 #/home/n869p538/spr-accel-profiling/interrupt_qat_dc/idxd-config/test
-sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 2 -o0x42 | tee log.1
+
+#async 10000 desc job (p. 14 of IAA Spec)
+ sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 10000 -o0x42 | tee log.3
 grep -v -e'info' -e'Start' log.* | grep -e decomp | awk -F: '{printf("%s,%s\n",$2,$3);}'
+
+#sync 10000 iterations
 
 Source 2 purpose? https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L293
 - is it used for decomp test
