@@ -21,22 +21,73 @@ To Test:
 
 Run
 =====
-#/home/n869p538/spr-accel-profiling/interrupt_qat_dc/idxd-config/test
+#from:/home/n869p538/spr-accel-profiling/interrupt_qat_dc/idxd-config/test
 
 #async 10000 desc job (p. 14 of IAA Spec)
- sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 10000 -o0x42 | tee log.3
+sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 10000 -o0x42 | tee log.3
 grep -v -e'info' -e'Start' log.* | grep -e decomp | awk -F: '{printf("%s,%s\n",$2,$3);}'
 
 #sync 10000 iterations
+sudo ./iaa_test -s 10000 -w 0 -l 4096 -f 0x1 -n 1 -o0x42 | tee sync_10000.log
+
+#Whole calgary corpus gets comp'd
+(base) n869p538@sapphire:test$ grep Calgary sync_10000.log | wc -l
+13
+(base) n869p538@sapphire:test$ echo $(( 4096 * 10000 / 13 ))
+3150769
+
+Interpret Results
+=====
+#async
+[ info] test with op 66 passed
+Average decompress alloc time: 167
+Average decompress prep time: 575
+Average decompress sub time: 156 <-- how long to fill full wq cap (625 for our test)
+Average decompress wait time: 1400
+Average filter alloc time: 0
+Average filter prep time: 0
+Average filter sub time: 0
+Average filter wait time: 0
+
+#sync
+[ info] test with op 66 passed
+Average decompress alloc time: 250
+Average decompress prep time: 186
+Average decompress sub time: 31 <-- how long to fill one wq ent
+Average decompress wait time: 2068
+Average filter alloc time: 0
+Average filter prep time: 0
+Average filter sub time: 0
+Average filter wait time: 0
+
+- why/how does comp compress_test get called 625 times?
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/num_iter_sync/test/iaa_test.c#L255
+<- https://vscode.dev/github/neel-patel-1/idxd-config/blob/num_iter_sync/test/iaa_test.c#L308
+
+(base) n869p538@sapphire:test$ sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 10000 -o0x42 > log.async
+(base) n869p538@sapphire:test$ grep Prep log.async  | wc -l
+625
+(base) n869p538@sapphire:test$ sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 100 -o0x42 > log.async.1
+(base) n869p538@sapphire:test$ grep Prep log.async  | wc -l
+625
+- regardless of num_descs?
+
+depends on wq capacity or "threshold" when a shared wq is used:
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/num_iter_sync/test/iaa_test.c#L270
+- we are using dedicated so we don't flood wqs by setting to 625
+
+
+
 
 Source 2 purpose? https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L293
 - is it used for decomp test
 
-How many times run?
-1000
-
-Num Descs parameter impact?
-
+```
+Decompression can be performed on a single buffer, where the entire stream is contained in a single buffer, or on multiple
+buffers, where the stream spans more than one buffer. In the latter case, a separate descriptor is submitted for each buffer.
+This is called a job. That is, a job is a series of descriptors that operate on one logical stream. The descriptors in a job are
+tied together by the use of a common AECS. The AECS written by each descriptor in the job is read by the next descriptor.
+```
 
 compress, get ratio, decompress get latency
 
