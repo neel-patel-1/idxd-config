@@ -4,7 +4,7 @@ Run
 make
 
 #decomp latency
-./decomp_latency.sh
+./decomp_latency_.sh
 
 #async 10000 desc job (p. 14 of IAA Spec)
 sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 10000 -o0x42 | tee log.3
@@ -43,6 +43,17 @@ Average filter alloc time: 0
 Average filter prep time: 0
 Average filter sub time: 0
 Average filter wait time: 0
+
+Todo
+===
+Does IAA support variable compression levels?
+
+Latency for ratio:1.0,2.0,3.0
+
+Latency Overhead of indexed compression?
+Compression ratio losses for indexed compression?
+Indexed Decompression Speed improvement for offset 25%,50%,75%?
+
 Latency Breakdown
 =====
 https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L208
