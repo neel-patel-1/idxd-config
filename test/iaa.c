@@ -1444,7 +1444,13 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
 		// info("Compress Desc: %p with status: 0x%x with error_code: %d\n",
 		// 	tsk_node->tsk->desc, tsk_node->tsk->comp->status, tsk_node->tsk->comp->result);
+		info("UncompressedBytes:%d,Compressed Bytes:%d,Ratio: %lf",
+			tsk_node->tsk->xfer_size,
+			tsk_node->tsk->comp->iax_output_size,
+			(double)tsk_node->tsk->comp->iax_output_size /
+			tsk_node->tsk->xfer_size);
 		tsk_node = tsk_node->next;
+
 	}
 
 	if (ret) {
@@ -1513,7 +1519,13 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
 		// info("Decompress Desc: %p with status: 0x%x with error_code: %d\n",
 		// 	tsk_node->tsk->desc, tsk_node->tsk->comp->status, tsk_node->tsk->comp->result);
+		info("DecompressedBytes:%d,Compressed Bytes:%d,Ratio: %lf",
+			tsk_node->tsk->comp->iax_output_size,
+			tsk_node->tsk->xfer_size,
+			(double)tsk_node->tsk->comp->iax_output_size /
+			tsk_node->tsk->xfer_size);
 		tsk_node = tsk_node->next;
+
 	}
 	printf("Preps/Subs/Waits:%d\n", total_preparations);
 

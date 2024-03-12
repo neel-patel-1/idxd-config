@@ -403,6 +403,7 @@ void memset_calgary(void *dst, size_t len){
 			fread((void *)calgaryTracker.fBuf,
 				1, len, calgaryTracker.f);
 	}
+	memcpy(dst, calgaryTracker.fBuf, len);
 
 
 }
