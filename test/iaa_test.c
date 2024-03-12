@@ -268,7 +268,7 @@ static int test_compress(struct acctest_context *ctx, size_t buf_size, int tflag
 		range = ctx->threshold;
 	else
 		range = ctx->wq_size;
-
+	info("TestCompress Iterations:%d,%d",itr, range);
 	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
 		i = (itr < range) ? itr : range;
 		/* Allocate memory to all the task nodes, desc, completion record*/
@@ -612,7 +612,7 @@ int main(int argc, char *argv[])
 	int num_iter = 1000;
 	bool do_sync = false;
 
-	while ((opt = getopt(argc, argv, "w:l:f:1:2:3:a:m:o:b:c:d:n:t:p:vh:s")) != -1) {
+	while ((opt = getopt(argc, argv, "w:l:f:1:2:3:a:m:o:b:c:d:n:t:p:vh:s:")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
@@ -651,10 +651,16 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			num_desc = strtoul(optarg, NULL, 0);
+			if(do_sync){
+				info("num_desc is overridden to 1 for sync operation\n");
+				num_desc = 1;
+			}
+
 			break;
 		case 's':
 			num_iter = strtoul(optarg, NULL, 0);
 			num_desc = 1;
+			do_sync = true;
 			info("Overriding num_desc to 1 for sync operation\n");
 			break;
 		case 't':
@@ -715,9 +721,9 @@ int main(int argc, char *argv[])
 	case IAX_OPCODE_DECOMPRESS:
 		if(do_sync){
 			for(int i=0; i<num_iter; i++){
-			rc = test_compress(iaa, buf_size, tflags, extra_flags_1, opcode, num_desc);
-			if (rc != ACCTEST_STATUS_OK)
-				goto error;
+				rc = test_compress(iaa, buf_size, tflags, extra_flags_1, opcode, num_desc);
+				if (rc != ACCTEST_STATUS_OK)
+					goto error;
 			}
 			print_stats(num_iter);
 		} else {

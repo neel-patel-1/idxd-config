@@ -1453,8 +1453,8 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 	}
 
 	// Decompress
-	printf("Start Decompress Breakdown\n");
 	tsk_node = ctx->multi_task_node;
+	int total_preparations = 0;
 	while (tsk_node) {
 		memset_pattern(tsk_node->tsk->src1, 0, tsk_node->tsk->xfer_size);
 		memcpy(tsk_node->tsk->src1, tsk_node->tsk->dst1,
@@ -1486,6 +1486,7 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 		lat.total_prep_time[0] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
 			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
+		total_preparations++;
 	}
 
 	info("Submitted all decompress jobs\n");
@@ -1498,6 +1499,7 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 	}
+
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
@@ -1513,6 +1515,7 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 		// 	tsk_node->tsk->desc, tsk_node->tsk->comp->status, tsk_node->tsk->comp->result);
 		tsk_node = tsk_node->next;
 	}
+	printf("Preps/Subs/Waits:%d\n", total_preparations);
 
 	return ret;
 }

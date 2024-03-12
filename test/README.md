@@ -42,7 +42,8 @@ Interpret Results
 [ info] test with op 66 passed
 Average decompress alloc time: 167
 Average decompress prep time: 575
-Average decompress sub time: 156 <-- how long to fill full wq cap (625 for our test)
+Average decompress sub time: 156 <-- how long to fill full wq cap (16 for our test)
+#[ info] TestCompress Iterations:1,16[ info] preparing descriptor for compress
 Average decompress wait time: 1400
 Average filter alloc time: 0
 Average filter prep time: 0
