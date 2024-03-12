@@ -139,6 +139,38 @@ void iaa_prep_scan(struct task *tsk)
 	tsk->desc->iax_filter_flags = tsk->iaa_filter_flags;
 	tsk->desc->iax_num_inputs = tsk->iaa_num_inputs;
 	tsk->comp->status = 0;
+	// printf("opcode: %x, dst1_addr: %lu, src1_addr: %lu, xfer_size: %u, dflags: %x\n",
+    //        tsk->opcode,
+    //        (unsigned long)tsk->dst1,
+    //        (unsigned long)tsk->src1,
+    //        tsk->xfer_size,
+    //        tsk->dflags);
+    // printf("completion_addr: %lu, iax_max_dst_size: %u, iax_src2_addr: %lu, iax_src2_xfer_size: %u\n",
+    //        (unsigned long)tsk->desc->completion_addr,
+    //        tsk->desc->iax_max_dst_size,
+    //        (unsigned long)tsk->desc->iax_src2_addr,
+    //        tsk->desc->iax_src2_xfer_size);
+    // printf("iax_filter_flags: %u, iax_num_inputs: %u, status: %d\n\n",
+    //        tsk->desc->iax_filter_flags,
+    //        tsk->desc->iax_num_inputs,
+    //        tsk->comp->status);
+
+}
+
+void iaa_prep_scan_wth_decompress(struct task *tsk)
+{
+	info("preparing descriptor for scan\n");
+
+	acctest_prep_desc_common(tsk->desc, tsk->opcode, (uint64_t)(tsk->dst1),
+				 (uint64_t)(tsk->src1), tsk->xfer_size, tsk->dflags);
+	tsk->desc->completion_addr = (uint64_t)(tsk->comp);
+	tsk->desc->iax_max_dst_size = tsk->iaa_max_dst_size;
+	tsk->desc->iax_src2_addr = (uint64_t)(tsk->src2);
+	tsk->desc->iax_src2_xfer_size = tsk->iaa_src2_xfer_size;
+	tsk->desc->iax_filter_flags = tsk->iaa_filter_flags;
+	tsk->desc->iax_decompr_flags = tsk->iaa_decompr_flags;
+	tsk->desc->iax_num_inputs = tsk->iaa_num_inputs;
+	tsk->comp->status = 0;
 }
 
 void iaa_prep_set_membership(struct task *tsk)

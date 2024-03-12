@@ -7,7 +7,18 @@
 #include "accel_test.h"
 #include "accfg_test.h"
 
-int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size);
+int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain);
+
+struct iaa_latencies {
+    uint64_t total_alloc_time[2];
+    uint64_t total_prep_time[2];
+    uint64_t total_sub_time[2];
+    uint64_t total_wait_time[2];
+};
+
+extern struct iaa_latencies lat;
+
+
 
 int iaa_noop_multi_task_nodes(struct acctest_context *ctx);
 int iaa_crc64_multi_task_nodes(struct acctest_context *ctx);
@@ -20,6 +31,8 @@ int iaa_zdecompress32_multi_task_nodes(struct acctest_context *ctx);
 int iaa_compress_multi_task_nodes(struct acctest_context *ctx);
 int iaa_decompress_multi_task_nodes(struct acctest_context *ctx);
 int iaa_scan_multi_task_nodes(struct acctest_context *ctx);
+int iaa_scdc_multi_task_nodes_sw(struct acctest_context *ctx);
+int iaa_scdc_multi_task_nodes_hw(struct acctest_context *ctx);
 int iaa_set_membership_multi_task_nodes(struct acctest_context *ctx);
 int iaa_extract_multi_task_nodes(struct acctest_context *ctx);
 int iaa_select_multi_task_nodes(struct acctest_context *ctx);
@@ -41,6 +54,7 @@ void iaa_prep_zdecompress32(struct task *tsk);
 void iaa_prep_compress(struct task *tsk);
 void iaa_prep_decompress(struct task *tsk);
 void iaa_prep_scan(struct task *tsk);
+void iaa_prep_scan_wth_decompress(struct task *tsk);
 void iaa_prep_set_membership(struct task *tsk);
 void iaa_prep_extract(struct task *tsk);
 void iaa_prep_select(struct task *tsk);
@@ -72,5 +86,7 @@ int task_result_verify_expand(struct task *tsk, int mismatch_expected);
 int task_result_verify_transl_fetch(struct task *tsk, int mismatch_expected);
 int task_result_verify_encrypto(struct task *tsk, int mismatch_expected);
 int task_result_verify_decrypto(struct task *tsk, int mismatch_expected);
+
+void print_stats(int num_iter);
 
 #endif

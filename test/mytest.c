@@ -49,6 +49,11 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
 	struct timespec dsa_times[11];
+	uint64_t batch_alloc_time, prep_op[num_desc], batch_prep_time[num_desc];
+	uint64_t batch_submit_time[num_desc], batch_wait_time[num_desc];
+	uint64_t batch_alloc_sum = 0, prep_op_sum = 0, batch_prep_sum = 0;
+	uint64_t batch_sub_sum = 0, batch_wait_sum = 0;
+	int j = 0;
 
 	info("batch: len %#lx tflags %#x bopcode %#x batch_no %d num_desc %ld\n",
 	     buf_size, tflags, bopcode, bsize, num_desc);
@@ -64,7 +69,6 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 		range = ctx->threshold;
 	else
 		range = ctx->wq_size;
-
 	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
 		i = (itr < range) ? itr : range;
 		clock_gettime(CLOCK_MONOTONIC, &dsa_times[0]);
@@ -72,16 +76,17 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 		clock_gettime(CLOCK_MONOTONIC, &dsa_times[1]);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
-		lat.total_alloc_time += ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
+		batch_alloc_time = ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
 					((dsa_times[0].tv_nsec) + (dsa_times[0].tv_sec * 1000000000));
-		// printf("Batch alloc time: %lu\n", batch_alloc_time);
 		dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
 		if ((tflags & TEST_FLAGS_BOF) && ctx->bof)
 			dflags |= IDXD_OP_FLAG_BOF;
 
 		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
 		btsk_node = ctx->multi_btask_node;
+		j=0;
 		while (btsk_node) {
+			printf("btsk_node: %d\n", btsk_node);
 			if (edl) {
 				struct batch_task *btsk = btsk_node->btsk;
 				struct batch_desc_info *bdi = &edl->bdi;
@@ -112,9 +117,9 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 				clock_gettime(CLOCK_MONOTONIC, &dsa_times[9]);
 				dsa_prep_batch_memcpy(btsk_node->btsk);
 				clock_gettime(CLOCK_MONOTONIC, &dsa_times[10]);
-				lat.total_prep_time += ((dsa_times[10].tv_nsec) + (dsa_times[10].tv_sec * 1000000000))  -
+				prep_op[j] = ((dsa_times[10].tv_nsec) + (dsa_times[10].tv_sec * 1000000000))  -
 					((dsa_times[9].tv_nsec) + (dsa_times[9].tv_sec * 1000000000));
-				// printf("Prepare OP time: %lu\n", prep_op);
+				j++;
 				break;
 
 			case DSA_OPCODE_MEMFILL:
@@ -183,17 +188,19 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 
 		btsk_node = ctx->multi_btask_node;
 		while (btsk_node) {
+			j=0;
 			clock_gettime(CLOCK_MONOTONIC, &dsa_times[2]);
 			dsa_prep_batch(btsk_node->btsk, dflags);
 			clock_gettime(CLOCK_MONOTONIC, &dsa_times[3]);
-			lat.total_batch_prep_time += ((dsa_times[3].tv_nsec) + (dsa_times[3].tv_sec * 1000000000))  -
+			batch_prep_time[j] = ((dsa_times[3].tv_nsec) + (dsa_times[3].tv_sec * 1000000000))  -
 					((dsa_times[2].tv_nsec) + (dsa_times[2].tv_sec * 1000000000));
-			// printf("Batch prep time: %lu\n", batch_prep_time);
 			dump_sub_desc(btsk_node->btsk);
 			btsk_node = btsk_node->next;
+			j++;
 		}
 
 		btsk_node = ctx->multi_btask_node;
+		j=0;
 		while (btsk_node) {
 			if (tflags & TEST_FLAGS_BTFLT) {
 				madvise(btsk_node->btsk->sub_descs,
@@ -254,13 +261,14 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 			clock_gettime(CLOCK_MONOTONIC, &dsa_times[4]);
 			acctest_desc_submit(ctx, btsk_node->btsk->core_task->desc);
 			clock_gettime(CLOCK_MONOTONIC, &dsa_times[5]);
-			lat.total_sub_time += ((dsa_times[5].tv_nsec) + (dsa_times[5].tv_sec * 1000000000))  -
+			batch_submit_time[j] = ((dsa_times[5].tv_nsec) + (dsa_times[5].tv_sec * 1000000000))  -
 					((dsa_times[4].tv_nsec) + (dsa_times[4].tv_sec * 1000000000));
-			// printf("Batch submit time: %lu\n", batch_submit_time);
 			btsk_node = btsk_node->next;
+			j++;
 		}
 
 		btsk_node = ctx->multi_btask_node;
+		j=0;
 		while (btsk_node) {
 			if (edl && btsk_node->btsk->edl->bdi.bc_wr_fail) {
 				info("batch completion unmapped not checking completions, done\n");
@@ -269,14 +277,14 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 			clock_gettime(CLOCK_MONOTONIC, &dsa_times[6]);
 			rc = dsa_wait_batch(btsk_node->btsk, ctx);
 			clock_gettime(CLOCK_MONOTONIC, &dsa_times[7]);
-			lat.total_wait_time += ((dsa_times[7].tv_nsec) + (dsa_times[7].tv_sec * 1000000000))  -
+			batch_wait_time[j] = ((dsa_times[7].tv_nsec) + (dsa_times[7].tv_sec * 1000000000))  -
 					((dsa_times[6].tv_nsec) + (dsa_times[6].tv_sec * 1000000000));
-			// printf("Batch wait time: %lu\n", batch_wait_time);
 			if (rc != ACCTEST_STATUS_OK) {
 				err("batch failed stat %d\n", rc);
 				return rc;
 			}
 			btsk_node = btsk_node->next;
+			j++;
 		}
 
 		/* ap delta test. First run cr delta, then run ap delta */
@@ -339,6 +347,17 @@ static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, si
 		itr = itr - range;
 	}
 
+	for(j = 0; j < num_desc; j++) {
+		batch_alloc_sum += batch_alloc_time[j];
+		prep_op_sum += prep_op[j];
+		batch_prep_sum = batch_prep_time[j];
+		batch_sub_sum = batch_submit_time[j];
+		batch_wait_sum = batch_wait_time[j];
+	}
+	printf("num desc: %d\n", num_desc);
+	printf("desc alloc,prepare op,prepare batch, batch sub, batch wait\n");
+	printf("%ld,%ld,%ld,%ld,%ld\n", batch_alloc_sum/num_desc, prep_op_sum/num_desc,
+			batch_prep_sum/num_desc, batch_sub_sum/num_desc, batch_wait_sum/num_desc);
 	return rc;
 }
 
@@ -418,7 +437,6 @@ static int test_dif(struct acctest_context *ctx, size_t buf_size,
 		acctest_free_task(ctx);
 		itr = itr - range;
 	}
-
 	return rc;
 }
 
@@ -477,6 +495,7 @@ static int test_memory(struct acctest_context *ctx, size_t buf_size,
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
 	struct timespec dsa_times[2];
+	uint64_t alloc_time;
 	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
 	     opcode, buf_size, tflags, num_desc);
 
@@ -493,9 +512,9 @@ static int test_memory(struct acctest_context *ctx, size_t buf_size,
 		clock_gettime(CLOCK_MONOTONIC, &dsa_times[0]);
 		rc = acctest_alloc_multiple_tasks(ctx, i);
 		clock_gettime(CLOCK_MONOTONIC, &dsa_times[1]);
-		lat.total_alloc_time += ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
+		alloc_time = ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
 					((dsa_times[0].tv_nsec) + (dsa_times[0].tv_sec * 1000000000));
-			// printf("Work alloc time: %lu\n", alloc_time);
+			printf("Work alloc time: %lu\n", alloc_time);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 
@@ -879,7 +898,6 @@ int main(int argc, char *argv[])
 	unsigned int num_desc = 1;
 	struct evl_desc_list *edl = NULL;
 	char *edl_str = NULL;
-	int num_iter = 1;
 
 	while ((opt = getopt(argc, argv, "e:w:l:f:o:b:c:d:n:t:p:vh")) != -1) {
 		switch (opt) {
@@ -964,16 +982,9 @@ int main(int argc, char *argv[])
 			rc = -EINVAL;
 			goto error;
 		}
-		for(int i = 0; i < num_iter; i++) {
-			rc = test_batch(dsa, edl, buf_size, tflags, bopcode, bsize, num_desc);
-			if (rc < 0)
-				goto error;
-		}
-		printf("Average alloc time: %lu\n", lat.total_alloc_time/num_iter);
-		printf("Average prep op time: %lu\n", lat.total_prep_time/num_iter);
-		printf("Average prep batch time: %lu\n", lat.total_batch_prep_time/num_iter);
-		printf("Average sub time: %lu\n", lat.total_sub_time/num_iter);
-		printf("Average wait time: %lu\n", lat.total_wait_time/num_iter);
+		rc = test_batch(dsa, edl, buf_size, tflags, bopcode, bsize, num_desc);
+		if (rc < 0)
+			goto error;
 		break;
 
 	case DSA_OPCODE_DRAIN:
@@ -984,16 +995,9 @@ int main(int argc, char *argv[])
 	case DSA_OPCODE_DUALCAST:
 	case DSA_OPCODE_TRANSL_FETCH:
 	case DSA_OPCODE_CFLUSH:
-		for(int i = 0; i < num_iter; i++) {
-			rc = test_memory(dsa, buf_size, tflags, opcode, num_desc);
-			if (rc != ACCTEST_STATUS_OK)
-				goto error;
-		}
-		printf("Average alloc time: %lu\n", lat.total_alloc_time/num_iter);
-		printf("Average prep op time: %lu\n", lat.total_prep_time/num_iter);
-		printf("Average prep batch time: %lu\n", lat.total_batch_prep_time/num_iter);
-		printf("Average sub time: %lu\n", lat.total_sub_time/num_iter);
-		printf("Average wait time: %lu\n", lat.total_wait_time/num_iter);
+		rc = test_memory(dsa, buf_size, tflags, opcode, num_desc);
+		if (rc != ACCTEST_STATUS_OK)
+			goto error;
 		break;
 
 	case DSA_OPCODE_CR_DELTA:

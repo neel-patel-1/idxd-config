@@ -20,6 +20,12 @@ unsigned int ms_timeout = 5000;
 int debug_logging;
 static int umwait_support;
 
+
+struct fileTracker calgaryTracker = {
+	.f = NULL,
+	.offset = 0
+};
+
 static inline void cpuid(unsigned int *eax, unsigned int *ebx,
 			 unsigned int *ecx, unsigned int *edx)
 {
@@ -248,7 +254,6 @@ int acctest_alloc_multiple_tasks(struct acctest_context *ctx, int num_itr)
 {
 	struct task_node *tmp_tsk_node;
 	int cnt = 0;
-
 	while (cnt < num_itr) {
 		tmp_tsk_node = ctx->multi_task_node;
 		ctx->multi_task_node = (struct task_node *)malloc(sizeof(struct task_node));
@@ -260,6 +265,7 @@ int acctest_alloc_multiple_tasks(struct acctest_context *ctx, int num_itr)
 			return -ENOMEM;
 		ctx->multi_task_node->next = tmp_tsk_node;
 		cnt++;
+
 	}
 	return ACCTEST_STATUS_OK;
 }
@@ -377,6 +383,12 @@ int acctest_wait_on_desc_timeout(struct completion_record *comp,
 	return (j == msec_timeout) ? -EAGAIN : 0;
 }
 
+
+void memset_calgary(void *dst, size_t len){
+	calgaryTracker.f = fopen(CALGARY, "r");
+	info("Calgary offset: %d\n", calgaryTracker.offset);
+}
+
 /* the pattern is 8 bytes long while the dst can with any length */
 void memset_pattern(void *dst, uint64_t pattern, size_t len)
 {
@@ -396,6 +408,8 @@ void memset_pattern(void *dst, uint64_t pattern, size_t len)
 	len_remainding = len & mask;
 	memcpy(aligned_end, &pattern, len_remainding);
 }
+
+
 
 /* return 0 if src is a repeatation of pattern, -1 otherwise */
 /* the pattern is 8 bytes long and the src could be with any length */
@@ -450,7 +464,6 @@ void acctest_free_task(struct acctest_context *ctx)
 		ctx->multi_task_node = NULL;
 	} else {
 		struct btask_node *tsk_node = NULL, *tmp_node = NULL;
-
 		tsk_node = ctx->multi_btask_node;
 		while (tsk_node) {
 			tmp_node = tsk_node->next;
@@ -475,7 +488,6 @@ void __clean_task(struct task *tsk)
 {
 	if (!tsk)
 		return;
-
 	free(tsk->desc);
 	free(tsk->comp);
 	mprotect(tsk->src1, PAGE_SIZE, PROT_READ | PROT_WRITE);

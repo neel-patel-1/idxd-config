@@ -172,6 +172,13 @@ struct acctest_context {
 	};
 };
 
+#define CALGARY "/lib/firmware/calgary"
+struct fileTracker{
+	FILE *f;
+	int offset;
+};
+extern struct fileTracker calgaryTracker;
+
 static inline void vprint_log(const char *tag, const char *msg, va_list args)
 {
 	printf("[%5s] ", tag);
@@ -287,6 +294,7 @@ int acctest_wait_on_desc_timeout(struct completion_record *comp,
 
 void memset_pattern(void *dst, uint64_t pattern, size_t len);
 int memcmp_pattern(const void *src, const uint64_t pattern, size_t len);
+void memset_calgary(void *dst, size_t len);
 
 void acctest_free(struct acctest_context *ctx);
 void acctest_free_task(struct acctest_context *ctx);

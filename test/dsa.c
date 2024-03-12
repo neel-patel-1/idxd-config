@@ -22,6 +22,7 @@
 #define DSA_COMPL_RING_SIZE 64
 
 unsigned int dif_blk_arr[] = {512, 520, 4096, 4104};
+struct dsa_latencies lat;
 
 int get_dif_blksz_flg(unsigned long xfer_size)
 {
@@ -795,6 +796,7 @@ again:
 
 int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 {
+	struct timespec dsa_times[10];
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
 
@@ -802,8 +804,12 @@ int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 		tsk_node->tsk->dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
 		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
 			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
-
+		clock_gettime(CLOCK_MONOTONIC, &dsa_times[0]);
 		dsa_prep_memcpy(tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &dsa_times[1]);
+		lat.total_prep_time += ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
+					((dsa_times[0].tv_nsec) + (dsa_times[0].tv_sec * 1000000000));
+		// printf("Work prep time: %lu\n", prep_op);
 		tsk_node = tsk_node->next;
 	}
 
@@ -812,14 +818,23 @@ int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 	while (tsk_node) {
 		if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
 			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
-
+		clock_gettime(CLOCK_MONOTONIC, &dsa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+		clock_gettime(CLOCK_MONOTONIC, &dsa_times[3]);
+		lat.total_sub_time += ((dsa_times[3].tv_nsec) + (dsa_times[3].tv_sec * 1000000000))  -
+					((dsa_times[2].tv_nsec) + (dsa_times[2].tv_sec * 1000000000));
+		// printf("Work sub time: %lu\n", submit_time);
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &dsa_times[4]);
 		ret = dsa_wait_memcpy(ctx, tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &dsa_times[5]);
+		lat.total_wait_time += ((dsa_times[5].tv_nsec) + (dsa_times[5].tv_sec * 1000000000))  -
+					((dsa_times[4].tv_nsec) + (dsa_times[4].tv_sec * 1000000000));
+		// printf("Work wait time: %lu\n", wait_time);
 		if (ret != ACCTEST_STATUS_OK)
 			info("Desc: %p failed with ret: %d\n",
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);

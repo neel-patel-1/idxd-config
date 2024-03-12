@@ -34,6 +34,20 @@ static struct iaa_filter_aecs_t iaa_filter_aecs = {
 	.rsvd6 = 0
 };
 
+struct iaa_latencies lat;
+
+void print_stats(int num_iter) {
+	printf("Average decompress alloc time: %lu\n", lat.total_alloc_time[0]/num_iter);
+	printf("Average decompress prep time: %lu\n", lat.total_prep_time[0]/num_iter);
+	printf("Average decompress sub time: %lu\n", lat.total_sub_time[0]/num_iter);
+	printf("Average decompress wait time: %lu\n", lat.total_wait_time[0]/num_iter);
+
+	printf("Average filter alloc time: %lu\n", lat.total_alloc_time[1]/num_iter);
+	printf("Average filter prep time: %lu\n", lat.total_prep_time[1]/num_iter);
+	printf("Average filter sub time: %lu\n", lat.total_sub_time[1]/num_iter);
+	printf("Average filter wait time: %lu\n", lat.total_wait_time[1]/num_iter);
+}
+
 static int init_crc64(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size)
 {
 	tsk->pattern = 0x98765432abcdef01;
@@ -289,7 +303,7 @@ static int init_decompress(struct task *tsk, int tflags, int opcode, unsigned lo
 }
 
 static int init_scan(struct task *tsk, int tflags,
-		     int opcode, unsigned long src1_xfer_size)
+		     int opcode, unsigned long src1_xfer_size, int chain)
 {
 	uint32_t i;
 	uint32_t pattern = 0x98765432;
@@ -297,21 +311,34 @@ static int init_scan(struct task *tsk, int tflags,
 	tsk->opcode = opcode;
 	tsk->test_flags = tflags;
 	tsk->xfer_size = src1_xfer_size;
+	tsk->input_size = src1_xfer_size;
+
+	tsk->input = aligned_alloc(32, src1_xfer_size);
+	if (!tsk->input)
+		return -ENOMEM;
 
 	tsk->src1 = aligned_alloc(ADDR_ALIGNMENT, src1_xfer_size);
 	if (!tsk->src1)
 		return -ENOMEM;
 	for (i = 0; i < (src1_xfer_size / 4); i++)
 		((uint32_t *)tsk->src1)[i] = pattern++;
+	memcpy(tsk->input, tsk->src1, src1_xfer_size);
+	if(chain == 0) {
+		tsk->src2 = aligned_alloc(32, IAA_FILTER_AECS_SIZE);
+		if (!tsk->src2)
+			return -ENOMEM;
+		memset_pattern(tsk->src2, 0, IAA_FILTER_AECS_SIZE);
+		iaa_filter_aecs.low_filter_param = 0x98765440;
+		iaa_filter_aecs.high_filter_param = 0x98765540;
+		memcpy(tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
+		tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
+	} else {
+		tsk->src2 = aligned_alloc(32, IAA_DECOMPRESS_SRC2_SIZE);
+		if (!tsk->src2)
+			return -ENOMEM;
+		memset_pattern(tsk->src2, 0, IAA_DECOMPRESS_SRC2_SIZE);
+	}
 
-	tsk->src2 = aligned_alloc(32, IAA_FILTER_AECS_SIZE);
-	if (!tsk->src2)
-		return -ENOMEM;
-	memset_pattern(tsk->src2, 0, IAA_FILTER_AECS_SIZE);
-	iaa_filter_aecs.low_filter_param = 0x98765440;
-	iaa_filter_aecs.high_filter_param = 0x98765540;
-	memcpy(tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
-	tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
 
 	tsk->dst1 = aligned_alloc(ADDR_ALIGNMENT, IAA_FILTER_MAX_DEST_SIZE);
 	if (!tsk->dst1)
@@ -839,7 +866,7 @@ static int init_decrypto(struct task *tsk, int tflags, int opcode, unsigned long
 	return ACCTEST_STATUS_OK;
 }
 
-int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size)
+int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain)
 {
 	int rc = 0;
 
@@ -875,7 +902,7 @@ int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_
 		rc = init_decompress(tsk, tflags, opcode, src1_xfer_size);
 		break;
 	case IAX_OPCODE_SCAN:
-		rc = init_scan(tsk, tflags, opcode, src1_xfer_size);
+		rc = init_scan(tsk, tflags, opcode, src1_xfer_size, chain);
 		break;
 	case IAX_OPCODE_SET_MEMBERSHIP:
 		rc = init_set_membership(tsk, tflags, opcode, src1_xfer_size);
@@ -1120,26 +1147,41 @@ int iaa_zcompress16_multi_task_nodes(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
+	struct timespec iaa_times[10];
 
 	while (tsk_node) {
 		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
 		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
 			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
-
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		iaa_prep_zcompress16(tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
+		lat.total_prep_time[0] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
+			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
+		// printf("Work prep time: %lu\n", lat.total_prep_time);
 		tsk_node = tsk_node->next;
 	}
 
 	info("Submitted all zcompress16 jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
+		lat.total_sub_time[0] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
+					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
+		// printf("Work sub time: %lu\n", lat.total_sub_time);
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
 		ret = iaa_wait_zcompress16(ctx, tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
+		lat.total_wait_time[0] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
+			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
+		// printf("Work wait time: %lu\n", lat.total_wait_time);
 		if (ret != ACCTEST_STATUS_OK)
 			info("Desc: %p failed with ret: %d\n",
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
@@ -1364,6 +1406,220 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
+	struct timespec iaa_times[10];
+
+	// Compress
+	while (tsk_node) {
+		tsk_node->tsk->opcode = IAX_OPCODE_COMPRESS;
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_WR_SRC2_CMPL | IDXD_OP_FLAG_RD_SRC2_AECS);
+		tsk_node->tsk->iaa_src2_xfer_size = IAA_COMPRESS_AECS_SIZE;
+
+		memcpy(tsk_node->tsk->src2, (void *)iaa_compress_aecs, IAA_COMPRESS_AECS_SIZE);
+
+		tsk_node->tsk->iaa_compr_flags = (IDXD_COMPRESS_FLAG_EOB_BFINAL |
+						  IDXD_COMPRESS_FLAG_FLUSH_OUTPUT);
+		tsk_node->tsk->iaa_max_dst_size = IAA_DECOMPRESS_MAX_DEST_SIZE;
+
+		iaa_prep_compress(tsk_node->tsk);
+		tsk_node = tsk_node->next;
+	}
+
+	info("Submitted all compress jobs\n");
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+		tsk_node = tsk_node->next;
+	}
+
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		ret = iaa_wait_compress(ctx, tsk_node->tsk);
+		if (ret != ACCTEST_STATUS_OK)
+			info("Desc: %p failed with ret: %d\n",
+			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
+		// info("Compress Desc: %p with status: 0x%x with error_code: %d\n",
+		// 	tsk_node->tsk->desc, tsk_node->tsk->comp->status, tsk_node->tsk->comp->result);
+		tsk_node = tsk_node->next;
+	}
+
+	if (ret) {
+		printf("Before decompress, compress failed\n");
+		return ret;
+	}
+
+	// Decompress
+	printf("Start Decompress Breakdown\n");
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		memset_pattern(tsk_node->tsk->src1, 0, tsk_node->tsk->xfer_size);
+		memcpy(tsk_node->tsk->src1, tsk_node->tsk->dst1,
+		       tsk_node->tsk->comp->iax_output_size);
+
+		tsk_node->tsk->opcode = IAX_OPCODE_DECOMPRESS;
+		tsk_node->tsk->xfer_size = tsk_node->tsk->comp->iax_output_size;
+
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+
+		tsk_node->tsk->dflags &= ~(IDXD_OP_FLAG_WR_SRC2_CMPL |
+					   IDXD_OP_FLAG_RD_SRC2_AECS);
+		tsk_node->tsk->iaa_src2_xfer_size = 0;
+		tsk_node->tsk->src2 = 0;
+		// memset_pattern(tsk_node->tsk->src2, 0, tsk_node->tsk->xfer_size);
+
+		tsk_node->tsk->iaa_decompr_flags = (IDXD_DECOMPRESS_FLAG_SELECT_EOB_BFINAL |
+						    IDXD_DECOMPRESS_FLAG_CHECK_EOB |
+						    IDXD_DECOMPRESS_FLAG_STOP_ON_EOB |
+						    IDXD_DECOMPRESS_FLAG_FLUSH_OUTPUT |
+						    IDXD_DECOMPRESS_FLAG_EN_DECOMPRESS);
+		tsk_node->tsk->iaa_max_dst_size = IAA_DECOMPRESS_MAX_DEST_SIZE;
+
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
+		iaa_prep_decompress(tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
+		lat.total_prep_time[0] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
+			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
+		tsk_node = tsk_node->next;
+	}
+
+	info("Submitted all decompress jobs\n");
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
+		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
+		lat.total_sub_time[0] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
+					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
+		tsk_node = tsk_node->next;
+	}
+
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
+		ret = iaa_wait_decompress(ctx, tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
+		lat.total_wait_time[0] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
+			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
+		if (ret != ACCTEST_STATUS_OK)
+			info("Desc: %p failed with ret: %d\n",
+			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
+		// info("Decompress Desc: %p with status: 0x%x with error_code: %d\n",
+		// 	tsk_node->tsk->desc, tsk_node->tsk->comp->status, tsk_node->tsk->comp->result);
+		tsk_node = tsk_node->next;
+	}
+
+	return ret;
+}
+
+static int iaa_wait_scan(struct acctest_context *ctx, struct task *tsk)
+{
+	struct completion_record *comp = tsk->comp;
+	int rc;
+
+	rc = acctest_wait_on_desc_timeout(comp, ctx, ms_timeout);
+	if (rc < 0) {
+		err("scan desc timeout\n");
+		return ACCTEST_STATUS_TIMEOUT;
+	}
+
+	return ACCTEST_STATUS_OK;
+}
+
+int iaa_scan_multi_task_nodes(struct acctest_context *ctx)
+{
+	struct task_node *tsk_node = ctx->multi_task_node;
+	int ret = ACCTEST_STATUS_OK;
+	struct timespec iaa_times[10];
+
+	while (tsk_node) {
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+
+		tsk_node->tsk->dflags |= IDXD_OP_FLAG_RD_SRC2_AECS;
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
+		iaa_prep_scan(tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
+		lat.total_prep_time[1] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
+			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
+
+		tsk_node = tsk_node->next;
+	}
+
+	info("Submitted all scan jobs\n");
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
+		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
+		lat.total_sub_time[1] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
+					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
+		tsk_node = tsk_node->next;
+	}
+
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
+		ret = iaa_wait_scan(ctx, tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
+		lat.total_wait_time[1] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
+			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
+
+		if (ret != ACCTEST_STATUS_OK) {
+			info("Desc: %p failed with ret: %d\n",
+			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
+		}
+		// info("Desc: %p with status: 0x%x with error_code: 0x%x\n",
+		//      tsk_node->tsk->desc, tsk_node->tsk->comp->status, tsk_node->tsk->comp->result);
+		tsk_node = tsk_node->next;
+	}
+
+	return ret;
+}
+
+int iaa_scdc_multi_task_nodes_sw(struct acctest_context *ctx)
+{
+	struct task_node *tsk_node = ctx->multi_task_node;
+	int ret = ACCTEST_STATUS_OK;
+	// struct timespec iaa_times[10];
+
+	ret = iaa_decompress_multi_task_nodes(ctx);
+
+	if (ret) {
+		printf("Before decompress, compress failed\n");
+		return ret;
+	}
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		// memset_pattern(tsk_node->tsk->src1, 0, tsk_node->tsk->xfer_size);
+		// memcpy(tsk_node->tsk->src1, tsk_node->tsk->dst1,
+		//        tsk_node->tsk->comp->iax_output_size);
+
+		tsk_node->tsk->opcode = IAX_OPCODE_SCAN;
+		tsk_node->tsk->xfer_size = tsk_node->tsk->comp->iax_output_size;
+
+		tsk_node->tsk->src2 = aligned_alloc(32, IAA_FILTER_AECS_SIZE);
+		memset_pattern(tsk_node->tsk->src2, 0, IAA_FILTER_AECS_SIZE);
+		iaa_filter_aecs.low_filter_param = 0x98765440;
+		iaa_filter_aecs.high_filter_param = 0x98765540;
+		memcpy(tsk_node->tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
+		tsk_node->tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
+		tsk_node = tsk_node->next;
+	}
+	ret = iaa_scan_multi_task_nodes(ctx);
+	return ret;
+}
+
+int iaa_scdc_multi_task_nodes_hw(struct acctest_context *ctx)
+{
+	struct task_node *tsk_node = ctx->multi_task_node;
+	int ret = ACCTEST_STATUS_OK;
+	struct timespec iaa_times[10];
 
 	// Compress
 	while (tsk_node) {
@@ -1402,107 +1658,78 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 	}
 
 	if (ret) {
-		printf("Before decompress, compress failed\n");
+		printf("Before decompress and scan, compress failed\n");
 		return ret;
 	}
-
-	// Decompress
+	// Decompress and Scan
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
+		// Save parameters for later verification
+
 		memset_pattern(tsk_node->tsk->src1, 0, tsk_node->tsk->xfer_size);
 		memcpy(tsk_node->tsk->src1, tsk_node->tsk->dst1,
 		       tsk_node->tsk->comp->iax_output_size);
 
-		tsk_node->tsk->opcode = IAX_OPCODE_DECOMPRESS;
+		tsk_node->tsk->opcode = IAX_OPCODE_SCAN;
 		tsk_node->tsk->xfer_size = tsk_node->tsk->comp->iax_output_size;
 
 		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
 		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
 			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
 
-		tsk_node->tsk->dflags &= ~(IDXD_OP_FLAG_WR_SRC2_CMPL |
-					   IDXD_OP_FLAG_RD_SRC2_AECS);
-		tsk_node->tsk->iaa_src2_xfer_size = 0;
-		tsk_node->tsk->src2 = 0;
-
-		tsk_node->tsk->iaa_decompr_flags = (IDXD_DECOMPRESS_FLAG_SELECT_EOB_BFINAL |
-						    IDXD_DECOMPRESS_FLAG_CHECK_EOB |
-						    IDXD_DECOMPRESS_FLAG_STOP_ON_EOB |
-						    IDXD_DECOMPRESS_FLAG_FLUSH_OUTPUT |
-						    IDXD_DECOMPRESS_FLAG_EN_DECOMPRESS);
-		tsk_node->tsk->iaa_max_dst_size = IAA_DECOMPRESS_MAX_DEST_SIZE;
-
-		iaa_prep_decompress(tsk_node->tsk);
-		tsk_node = tsk_node->next;
-	}
-
-	info("Submitted all decompress jobs\n");
-	tsk_node = ctx->multi_task_node;
-	while (tsk_node) {
-		acctest_desc_submit(ctx, tsk_node->tsk->desc);
-		tsk_node = tsk_node->next;
-	}
-
-	tsk_node = ctx->multi_task_node;
-	while (tsk_node) {
-		ret = iaa_wait_decompress(ctx, tsk_node->tsk);
-		if (ret != ACCTEST_STATUS_OK)
-			info("Desc: %p failed with ret: %d\n",
-			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
-		tsk_node = tsk_node->next;
-	}
-
-	return ret;
-}
-
-static int iaa_wait_scan(struct acctest_context *ctx, struct task *tsk)
-{
-	struct completion_record *comp = tsk->comp;
-	int rc;
-
-	rc = acctest_wait_on_desc_timeout(comp, ctx, ms_timeout);
-	if (rc < 0) {
-		err("scan desc timeout\n");
-		return ACCTEST_STATUS_TIMEOUT;
-	}
-
-	return ACCTEST_STATUS_OK;
-}
-
-int iaa_scan_multi_task_nodes(struct acctest_context *ctx)
-{
-	struct task_node *tsk_node = ctx->multi_task_node;
-	int ret = ACCTEST_STATUS_OK;
-
-	while (tsk_node) {
-		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
-		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
-			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
-
 		tsk_node->tsk->dflags |= IDXD_OP_FLAG_RD_SRC2_AECS;
+		tsk_node->tsk->dflags &= ~(IDXD_OP_FLAG_WR_SRC2_CMPL);
+		tsk_node->tsk->iaa_decompr_flags = (IDXD_DECOMPRESS_FLAG_SELECT_EOB_BFINAL |
+					IDXD_DECOMPRESS_FLAG_CHECK_EOB |
+					IDXD_DECOMPRESS_FLAG_STOP_ON_EOB |
+					IDXD_DECOMPRESS_FLAG_FLUSH_OUTPUT |
+					IDXD_DECOMPRESS_FLAG_EN_DECOMPRESS);
 
-		iaa_prep_scan(tsk_node->tsk);
+		memset_pattern(tsk_node->tsk->src2, 0, IAA_FILTER_AECS_SIZE);
+		iaa_filter_aecs.low_filter_param = 0x98765440;
+		iaa_filter_aecs.high_filter_param = 0x98765540;
+		memcpy(tsk_node->tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
+		tsk_node->tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
+
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
+		iaa_prep_scan_wth_decompress(tsk_node->tsk);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
+		lat.total_prep_time[1] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
+			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 	}
 
 	info("Submitted all scan jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
+		lat.total_sub_time[1] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
+					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
 		ret = iaa_wait_scan(ctx, tsk_node->tsk);
-		if (ret != ACCTEST_STATUS_OK)
+		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
+		lat.total_wait_time[1] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
+			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
+
+		if (ret != ACCTEST_STATUS_OK) {
 			info("Desc: %p failed with ret: %d\n",
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
+		}
+		// info("Desc: %p with status: 0x%x with error_code: %d\n",
+		// 	     tsk_node->tsk->desc, tsk_node->tsk->comp->status, tsk_node->tsk->comp->result);
 		tsk_node = tsk_node->next;
 	}
 
 	return ret;
 }
+
 
 static int iaa_wait_set_membership(struct acctest_context *ctx, struct task *tsk)
 {
@@ -2470,10 +2697,9 @@ int task_result_verify_scan(struct task *tsk, int mismatch_expected)
 	if (mismatch_expected)
 		warn("invalid arg mismatch_expected for %d\n", tsk->opcode);
 
-	expected_len = iaa_do_scan(tsk->output, tsk->src1, tsk->src2,
+	expected_len = iaa_do_scan(tsk->output, tsk->input, tsk->src2,
 				   tsk->iaa_num_inputs, tsk->iaa_filter_flags);
 	rc = memcmp(tsk->dst1, tsk->output, expected_len);
-
 	if (!mismatch_expected) {
 		if (expected_len - tsk->comp->iax_output_size) {
 			err("Scan mismatch, exp len %d, act len %d\n",

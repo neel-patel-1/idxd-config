@@ -35,6 +35,16 @@
 
 #define MIN_DELTA_RECORD_SIZE 80
 
+struct dsa_latencies {
+    uint64_t total_alloc_time;
+    uint64_t total_prep_time;
+	uint64_t total_batch_prep_time;
+    uint64_t total_sub_time;
+    uint64_t total_wait_time;
+};
+
+extern struct dsa_latencies lat;
+
 /* dump all sub descriptors for a batch task */
 static inline void dump_sub_desc(struct batch_task *btsk)
 {
