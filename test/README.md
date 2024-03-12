@@ -1,27 +1,10 @@
-Latency Breakdown
-=====
-https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L208
-- alloc work desc
-
-https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1483
-- populate decomp work desc
-
-https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1494
-- submit work desc
-
-https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1504
-- wait for completion
--   calls umonitor (https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L322) on the address of the completion record
--   calls umwait (https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L327) on the address of the completion record
-
-To Test:
-- chaining hw vs. sw support: https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa_test.c#L374
-- support for decompress and scan: https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1618
-
-
 Run
 =====
 #from:/home/n869p538/spr-accel-profiling/interrupt_qat_dc/idxd-config/test
+make
+
+#decomp latency
+./decomp_latency.sh
 
 #async 10000 desc job (p. 14 of IAA Spec)
 sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 10000 -o0x42 | tee log.3
@@ -60,6 +43,27 @@ Average filter alloc time: 0
 Average filter prep time: 0
 Average filter sub time: 0
 Average filter wait time: 0
+Latency Breakdown
+=====
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L208
+- alloc work desc
+
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1483
+- populate decomp work desc
+
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1494
+- submit work desc
+
+https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1504
+- wait for completion
+-   calls umonitor (https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L322) on the address of the completion record
+-   calls umwait (https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/accel_test.c#L327) on the address of the completion record
+
+To Test:
+- chaining hw vs. sw support: https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa_test.c#L374
+- support for decompress and scan: https://vscode.dev/github/neel-patel-1/idxd-config/blob/decomp_calgary_latency/test/iaa.c#L1618
+
+
 
 - why/how does comp compress_test get called 625 times?
 https://vscode.dev/github/neel-patel-1/idxd-config/blob/num_iter_sync/test/iaa_test.c#L255
