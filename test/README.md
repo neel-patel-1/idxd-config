@@ -7,8 +7,10 @@ make
 ./multi_decomp_latency.sh
 
 #async 10000 desc job (p. 14 of IAA Spec)
+``
 sudo ./iaa_test -w 0 -l 4096 -f 0x1 -n 10000 -o0x42 | tee log.3
 grep -v -e'info' -e'Start' log.* | grep -e decomp | awk -F: '{printf("%s,%s\n",$2,$3);}'
+``
 
 #sync 10000 iterations
 sudo ./iaa_test -s 10000 -w 0 -l 4096 -f 0x1 -n 1 -o0x42 | tee sync_10000.log
@@ -46,11 +48,12 @@ Average filter wait time: 0
 
 Todo
 ===
-When do we accelerate sync?: 256, 1KB
+When do we accelerate sync-decomp ?: 256, 1K is faster than ISA-L decomp, but comp ratio is lower.
+Is iaa-inflate on isal-compressed obj's faster than isal-inflate on same obj's?
+Latency for decomp on different ratios:1.0,2.0,3.0
 
 Does IAA support variable compression levels?
 
-Latency for ratio:1.0,2.0,3.0
 
 Latency Overhead of indexed compression?
 Compression ratio losses for indexed compression?
