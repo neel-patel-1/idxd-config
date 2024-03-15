@@ -14,7 +14,7 @@
 #pragma GCC diagnostic ignored "-Wformat"
 
 unsigned long msec_timeout = 1000; // 5 msec
-unsigned long complete_notify_time = 0, complete_receive_time = 0;
+unsigned long complete_notify_cycle = 0, complete_receive_cycle = 0;
 
 static inline unsigned long rdtsc(void)
 {
@@ -44,13 +44,15 @@ static inline int umwait(unsigned long timeout, unsigned int state)
 
 void *function(void *args){
 	unsigned long timeout = (msec_timeout * 1000000UL) * 3;
-	uint8_t *comp = (uint8_t *)args;
+	struct completion_record *comp = (struct completion_record *)args;
 	uint32_t state = 0;
-	umonitor(comp);
-	umwait(timeout, state);
-	complete_receive_time = rdtsc();
+	umonitor((uint8_t *)comp);
+	if (comp->status != 0)
+			printf("Completion status is not 0\n");
+	umwait(0, state);
+	complete_receive_cycle = rdtsc();
 
-	printf("Completion received after %lu cycles\n", complete_receive_time - complete_notify_time);
+	printf("Completion received after %lu cycles\n", complete_receive_cycle - complete_notify_cycle);
 	return NULL;
 }
 
@@ -124,8 +126,10 @@ int main(int argc, char *argv[])
 	uint8_t *comp = (uint8_t *)malloc(sizeof(struct completion_record));
 	memset(comp, 0, sizeof(struct completion_record));
 	status = pthread_create(&core, &attr, (void *(*)(void *))function, (void *)comp);
-	complete_notify_time = rdtsc();
-	comp[0] = 1;
+	// barrier();
+	usleep(100);
+	// ((struct completion_record *)comp)->status = 1;
+	complete_notify_cycle = rdtsc();
 	pthread_join(core, NULL);
 
 	if (status != 0)

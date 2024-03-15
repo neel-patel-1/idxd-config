@@ -1,3 +1,13 @@
+COMPLETION RECORD NOTIFICATION (git checkout umonitor)
+====
+RUN
+====
+./iaa_test
+
+
+
+IAA Decompression Latency for Calgary Corpus (git checkout main)
+====
 Run
 =====
 #from:/home/n869p538/spr-accel-profiling/interrupt_qat_dc/idxd-config/test
