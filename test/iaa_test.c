@@ -280,7 +280,7 @@ static int test_compress(struct acctest_context *ctx, size_t buf_size, int tflag
 				((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
-
+		info("Allocated memory for operation\n");
 		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
 		tsk_node = ctx->multi_task_node;
 		while (tsk_node) {
@@ -332,7 +332,7 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
 	struct timespec iaa_times[2];
-	int chain = 2;
+	int chain = 1;
 
 	info("test filter: opcode %d len %#lx tflags %#x num_desc %ld\n",
 	     opcode, buf_size, tflags, num_desc);
@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
 	int dev_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	int dev_wq_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	unsigned int num_desc = 1;
-	int num_iter = 1000;
+	int num_iter = 1;
 	bool do_sync = false;
 
 	while ((opt = getopt(argc, argv, "w:l:f:1:2:3:a:m:o:b:c:d:n:t:p:vh:s:")) != -1) {
@@ -655,7 +655,6 @@ int main(int argc, char *argv[])
 				info("num_desc is overridden to 1 for sync operation\n");
 				num_desc = 1;
 			}
-
 			break;
 		case 's':
 			num_iter = strtoul(optarg, NULL, 0);
@@ -739,13 +738,21 @@ int main(int argc, char *argv[])
 	case IAX_OPCODE_RLE_BURST:
 	case IAX_OPCODE_FIND_UNIQUE:
 	case IAX_OPCODE_EXPAND:
-		for(int i = 0; i < num_iter; i++) {
+		if(do_sync){
+			for(int i=0; i<num_iter; i++){
+			rc = test_filter(iaa, buf_size, tflags, extra_flags_2,
+				 extra_flags_3, opcode, num_desc);
+				if (rc != ACCTEST_STATUS_OK)
+					goto error;
+			}
+			print_stats(num_iter);
+		} else {
 			rc = test_filter(iaa, buf_size, tflags, extra_flags_2,
 				 extra_flags_3, opcode, num_desc);
 			if (rc != ACCTEST_STATUS_OK)
-				goto error;
+					goto error;
+			print_stats(num_desc);
 		}
-		print_stats(num_desc);
 		break;
 	case IAX_OPCODE_TRANSL_FETCH:
 		rc = test_transl_fetch(iaa, buf_size, tflags, opcode, num_desc, do_map);

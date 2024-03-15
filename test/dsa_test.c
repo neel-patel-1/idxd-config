@@ -876,12 +876,13 @@ int main(int argc, char *argv[])
 	int wq_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	int dev_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	int dev_wq_id = ACCTEST_DEVICE_ID_NO_INPUT;
-	unsigned int num_desc = 1;
 	struct evl_desc_list *edl = NULL;
 	char *edl_str = NULL;
+	unsigned int num_desc = 1;
 	int num_iter = 1;
+	bool do_sync = false;
 
-	while ((opt = getopt(argc, argv, "e:w:l:f:o:b:c:d:n:t:p:vh")) != -1) {
+	while ((opt = getopt(argc, argv, "e:w:l:f:o:b:c:d:n:t:p:vh:s:")) != -1) {
 		switch (opt) {
 		case 'e':
 			edl_str = optarg;
@@ -914,6 +915,16 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			num_desc = strtoul(optarg, NULL, 0);
+			if(do_sync){
+				info("num_desc is overridden to 1 for sync operation\n");
+				num_desc = 1;
+			}
+			break;
+		case 's':
+			num_iter = strtoul(optarg, NULL, 0);
+			num_desc = 1;
+			do_sync = true;
+			info("Overriding num_desc to 1 for sync operation\n");
 			break;
 		case 't':
 			ms_timeout = strtoul(optarg, NULL, 0);
@@ -964,16 +975,17 @@ int main(int argc, char *argv[])
 			rc = -EINVAL;
 			goto error;
 		}
-		for(int i = 0; i < num_iter; i++) {
+		if(do_sync){
+			for(int i=0; i<num_iter; i++){
+				rc = test_batch(dsa, edl, buf_size, tflags, bopcode, bsize, num_desc);
+				if (rc != ACCTEST_STATUS_OK)
+					goto error;
+			}
+			print_stats(num_iter);
+		} else {
 			rc = test_batch(dsa, edl, buf_size, tflags, bopcode, bsize, num_desc);
-			if (rc < 0)
-				goto error;
+			print_stats(num_desc);
 		}
-		printf("Average alloc time: %lu\n", lat.total_alloc_time/num_iter);
-		printf("Average prep op time: %lu\n", lat.total_prep_time/num_iter);
-		printf("Average prep batch time: %lu\n", lat.total_batch_prep_time/num_iter);
-		printf("Average sub time: %lu\n", lat.total_sub_time/num_iter);
-		printf("Average wait time: %lu\n", lat.total_wait_time/num_iter);
 		break;
 
 	case DSA_OPCODE_DRAIN:
@@ -984,16 +996,17 @@ int main(int argc, char *argv[])
 	case DSA_OPCODE_DUALCAST:
 	case DSA_OPCODE_TRANSL_FETCH:
 	case DSA_OPCODE_CFLUSH:
-		for(int i = 0; i < num_iter; i++) {
+		if(do_sync){
+			for(int i=0; i<num_iter; i++){
+				rc = test_memory(dsa, buf_size, tflags, opcode, num_desc);
+				if (rc != ACCTEST_STATUS_OK)
+					goto error;
+			}
+			print_stats(num_iter);
+		} else {
 			rc = test_memory(dsa, buf_size, tflags, opcode, num_desc);
-			if (rc != ACCTEST_STATUS_OK)
-				goto error;
+			print_stats(num_desc);
 		}
-		printf("Average alloc time: %lu\n", lat.total_alloc_time/num_iter);
-		printf("Average prep op time: %lu\n", lat.total_prep_time/num_iter);
-		printf("Average prep batch time: %lu\n", lat.total_batch_prep_time/num_iter);
-		printf("Average sub time: %lu\n", lat.total_sub_time/num_iter);
-		printf("Average wait time: %lu\n", lat.total_wait_time/num_iter);
 		break;
 
 	case DSA_OPCODE_CR_DELTA:

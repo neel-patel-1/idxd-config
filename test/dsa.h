@@ -202,4 +202,5 @@ int dsa_wait_batch(struct batch_task *btsk, struct acctest_context *ctx);
 uint16_t dsa_calculate_crc_t10dif(unsigned char *buffer, size_t len, int flags);
 int get_dif_blksz_flg(unsigned long xfer_size);
 unsigned long get_blks(unsigned long xfer_size);
+void print_stats(int num_iter);
 #endif

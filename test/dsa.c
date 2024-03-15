@@ -24,6 +24,14 @@
 unsigned int dif_blk_arr[] = {512, 520, 4096, 4104};
 struct dsa_latencies lat;
 
+void print_stats(int num_iter) {
+		printf("Average alloc time: %lu\n", lat.total_alloc_time/num_iter);
+		printf("Average prep op time: %lu\n", lat.total_prep_time/num_iter);
+		printf("Average prep batch time: %lu\n", lat.total_batch_prep_time/num_iter);
+		printf("Average sub time: %lu\n", lat.total_sub_time/num_iter);
+		printf("Average wait time: %lu\n", lat.total_wait_time/num_iter);
+}
+
 int get_dif_blksz_flg(unsigned long xfer_size)
 {
 	int blk_idx_flg = 3;
