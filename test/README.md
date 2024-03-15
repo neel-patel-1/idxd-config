@@ -3,6 +3,10 @@ COMPLETION RECORD NOTIFICATION (git checkout umonitor)
 RUN
 ====
 ./iaa_test
+(base) n869p538@sapphire:test$ ./iaa_test  | grep -e BUSY | grep -e Completion |  awk '{sum+= $5} END{print sum/NR}'
+387292
+(base) n869p538@sapphire:test$ ./iaa_test  | grep -e MWAIT | grep -e Completion |  awk '{sum+= $5} END{print sum/NR}'
+381611
 
 
 

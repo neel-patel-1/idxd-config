@@ -42,7 +42,20 @@ static inline int umwait(unsigned long timeout, unsigned int state)
 	return r;
 }
 
-void *function(void *args){
+void *busy_wait(void *args){
+	unsigned long timeout = (msec_timeout * 1000000UL) * 3;
+	struct completion_record *comp = (struct completion_record *)args;
+	uint32_t state = 0;
+
+	while (comp->status == 0){}
+	complete_receive_cycle = rdtsc();
+
+	printf("BUSY_WAIT: Value observed at:%ld\n", complete_receive_cycle);
+	printf("BUSY_WAIT: Completion received after %lu cycles\n", complete_receive_cycle - complete_notify_cycle);
+	return NULL;
+}
+
+void *mwait_wait(void *args){
 	unsigned long timeout = (msec_timeout * 1000000UL) * 3;
 	struct completion_record *comp = (struct completion_record *)args;
 	uint32_t state = 0;
@@ -50,17 +63,15 @@ void *function(void *args){
 	umonitor((uint8_t *)comp);
 	while (comp->status == 0){
 		umwait(0, state);
-		complete_receive_cycle = rdtsc();
 		if( comp->status != 0 ){
-			complete_receive_cycle = rdtsc();
-			printf("Value observed at:%ld\n", complete_receive_cycle);
 			break;
 		}
 		umonitor((uint8_t *)comp);
 	}
+	complete_receive_cycle = rdtsc();
 
-	printf("Value observed at:%ld\n", complete_receive_cycle);
-	printf("Completion received after %lu cycles\n", complete_receive_cycle - complete_notify_cycle);
+	printf("MWAIT: Value observed at:%ld\n", complete_receive_cycle);
+	printf("MWAIT: Completion received after %lu cycles\n", complete_receive_cycle - complete_notify_cycle);
 	return NULL;
 }
 
@@ -81,7 +92,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Setting scheduling parameter will fail for non root user,
-		* as the default value of inheritsched is PTHREAD_EXPLICIT_SCHED in
+		* as the default BUSY_WAIT: Value of inheritsched is PTHREAD_EXPLICIT_SCHED in
 		* POSIX. It is not required to set it explicitly before setting the
 		* scheduling policy */
 
@@ -103,7 +114,7 @@ int main(int argc, char *argv[])
 					return -1;
 			}
 
-			/* Set priority based on value in threadAttr */
+			/* Set priority based on BUSY_WAIT: Value in threadAttr */
 			memset(&param, 0, sizeof(param));
 			param.sched_priority = SCHED_OTHER;
 
@@ -133,14 +144,27 @@ int main(int argc, char *argv[])
 
 	uint8_t *comp = (uint8_t *)malloc(sizeof(struct completion_record));
 	memset(comp, 0, sizeof(struct completion_record));
-	status = pthread_create(&core, &attr, (void *(*)(void *))function, (void *)comp);
-	// barrier();
-	usleep(10000);
 
-	((struct completion_record *)comp)->status = 1;
-	complete_notify_cycle = rdtsc();
-	printf("Value set at:%ld\n", complete_notify_cycle);
-	pthread_join(core, NULL);
+
+	for(int i=0; i<10; i++){
+		status = pthread_create(&core, &attr, (void *(*)(void *))mwait_wait, (void *)comp);
+		// barrier();
+		usleep(10000);
+		((struct completion_record *)comp)->status = 1;
+		complete_notify_cycle = rdtsc();
+		printf("Value set at:%ld\n", complete_notify_cycle);
+		pthread_join(core, NULL);
+	}
+
+	for(int i=0; i<10; i++){
+		status = pthread_create(&core, &attr, (void *(*)(void *))busy_wait, (void *)comp);
+		// barrier();
+		usleep(10000);
+		((struct completion_record *)comp)->status = 1;
+		complete_notify_cycle = rdtsc();
+		printf("Value set at:%ld\n", complete_notify_cycle);
+		pthread_join(core, NULL);
+	}
 
 	if (status != 0)
 	{
