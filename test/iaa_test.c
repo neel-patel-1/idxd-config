@@ -46,12 +46,20 @@ void *function(void *args){
 	unsigned long timeout = (msec_timeout * 1000000UL) * 3;
 	struct completion_record *comp = (struct completion_record *)args;
 	uint32_t state = 0;
-	umonitor((uint8_t *)comp);
-	if (comp->status != 0)
-			printf("Completion status is not 0\n");
-	umwait(0, state);
-	complete_receive_cycle = rdtsc();
 
+	umonitor((uint8_t *)comp);
+	while (comp->status == 0){
+		umwait(0, state);
+		complete_receive_cycle = rdtsc();
+		if( comp->status != 0 ){
+			complete_receive_cycle = rdtsc();
+			printf("Value observed at:%ld\n", complete_receive_cycle);
+			break;
+		}
+		umonitor((uint8_t *)comp);
+	}
+
+	printf("Value observed at:%ld\n", complete_receive_cycle);
 	printf("Completion received after %lu cycles\n", complete_receive_cycle - complete_notify_cycle);
 	return NULL;
 }
@@ -127,9 +135,11 @@ int main(int argc, char *argv[])
 	memset(comp, 0, sizeof(struct completion_record));
 	status = pthread_create(&core, &attr, (void *(*)(void *))function, (void *)comp);
 	// barrier();
-	usleep(100);
-	// ((struct completion_record *)comp)->status = 1;
+	usleep(10000);
+
+	((struct completion_record *)comp)->status = 1;
 	complete_notify_cycle = rdtsc();
+	printf("Value set at:%ld\n", complete_notify_cycle);
 	pthread_join(core, NULL);
 
 	if (status != 0)
