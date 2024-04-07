@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2019 Intel Corporation. All rights reserved. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,345 +9,80 @@
 #include <linux/mman.h>
 #include "accel_test.h"
 #include "dsa.h"
-#include <time.h>
+#include "iaa.h"
+#include "algorithms/iaa_filter.h"
+// #include "qpl/qpl.h"
 
-#define DSA_TEST_SIZE 20000
-#pragma GCC diagnostic ignored "-Wformat"
+//To run -> sudo ./test/dsa_test -w 1 -i 1000 -l <size>
 
-static void usage(void)
-{
-	printf("<app_name> [options]\n"
-	"-w <wq_type> ; 0=dedicated, 1=shared\n"
-	"-l <length>  ; total test buffer size\n"
-	"-f <test_flags> ; 0x1: block-on-fault\n"
-	"		 ; 0x2: no umwait\n"
-	"                ; 0x4: reserved\n"
-	"                ; 0x8: prefault buffers\n"
-	"                ; 0x10: fault on completion record\n"
-	"                ; 0x20: fault on batch record\n"
-	"-o <opcode>     ; opcode, same value as in DSA spec\n"
-	"-b <opcode> ; if batch opcode, opcode in the batch\n"
-	"-c <batch_size> ; if batch opcode, number of descriptors for batch\n"
-	"-d              ; wq device such as dsa0/wq0.0\n"
-	"-n <number of descriptors> ;descriptor count to submit\n"
-	"-t <ms timeout> ; ms to wait for descs to complete\n"
-	"-e              ; evl pattern <batch>:<desc><..>\n"
-	"                ; <bc_fault:bc_wr_fail:bd_fault:bd_fault_idx>:<desc_fault:cp_fault:cp_wr_fail:fence>:\n"
-	"-v              ; verbose\n"
-	"-h              ; print this message\n");
+#define DSA_TEST_SIZE 1024
+long long scan_lat = 0;
+long long select_lat = 0;
+long long shuffle_lat = 0;
+long long memcpy_lat = 0;
+struct timespec times[2];
+bool print_contents = false;
+
+void *memcpy_src1;
+uint64_t memcpy_size;
+
+static int memcpy_init(struct task *tsk, int tflags, int opcode, unsigned long xfer_size) {
+	unsigned long force_align = PAGE_SIZE;
+
+	tsk->pattern = 0x0123456789abcdef;
+	tsk->pattern2 = 0xfedcba9876543210;
+	tsk->opcode = opcode;
+	tsk->test_flags = tflags;
+	tsk->xfer_size = xfer_size;
+
+	tsk->src1 = memcpy_src1;
+	// tsk->src1 = aligned_alloc(force_align, xfer_size);
+	// if (!tsk->src1)
+	// 	return -ENOMEM;
+	// memset_pattern(tsk->src1, tsk->pattern, xfer_size);
+
+	tsk->dst1 = aligned_alloc(force_align, xfer_size);
+	if (!tsk->dst1)
+		return -ENOMEM;
+	memset_pattern(tsk->dst1, 0, xfer_size);
+
+	return ACCTEST_STATUS_OK;
+}
+
+static void shuffle_elements(void *array, size_t size) {
+    uint32_t *arr = (uint32_t *)array;
+    size_t n = size / sizeof(uint32_t); // Number of elements
+    if (n > 1) {
+        srand((unsigned)time(NULL)); // Seed the random number generator
+        for (size_t i = n - 1; i > 0; i--) {
+            size_t j = rand() % (i + 1); // Random index from 0 to i
+            // Swap arr[i] and arr[j]
+            uint32_t tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+        }
+    }
+}
+
+static void print_elements(void *array, size_t size) {
+	for (long unsigned int i = 0; i < (size / sizeof(uint32_t)); i++) {
+		printf("%10u ", ((uint32_t *)array)[i]);
+
+		if ((i + 1) % 8 == 0)
+			printf("\n");
+	}
+	printf("\n");
 }
 
 
-
-static int test_batch(struct acctest_context *ctx, struct evl_desc_list *edl, size_t buf_size,
-		      int tflags, uint32_t bopcode, unsigned int bsize, int num_desc)
-{
-	struct btask_node *btsk_node;
-	unsigned long dflags;
-	int rc = ACCTEST_STATUS_OK;
-	int itr = num_desc, i = 0, range = 0;
-	struct timespec dsa_times[11];
-
-	info("batch: len %#lx tflags %#x bopcode %#x batch_no %d num_desc %ld\n",
-	     buf_size, tflags, bopcode, bsize, num_desc);
-
-	if (bopcode == DSA_OPCODE_BATCH) {
-		err("Can't have batch op inside batch op\n");
-		return -EINVAL;
-	}
-
-	ctx->is_batch = 1;
-
-	if (ctx->dedicated == ACCFG_WQ_SHARED)
-		range = ctx->threshold;
-	else
-		range = ctx->wq_size;
-
-	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
-		i = (itr < range) ? itr : range;
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[0]);
-		rc = alloc_batch_task(ctx, bsize, i);
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[1]);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
-		lat.total_alloc_time += ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
-					((dsa_times[0].tv_nsec) + (dsa_times[0].tv_sec * 1000000000));
-		// printf("Batch alloc time: %lu\n", batch_alloc_time);
-		dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
-		if ((tflags & TEST_FLAGS_BOF) && ctx->bof)
-			dflags |= IDXD_OP_FLAG_BOF;
-
-		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
-		btsk_node = ctx->multi_btask_node;
-		while (btsk_node) {
-			if (edl) {
-				struct batch_task *btsk = btsk_node->btsk;
-				struct batch_desc_info *bdi = &edl->bdi;
-				struct hw_desc *descs;
-
-				/*
-				 * adjust sub_descs so &btsk->sub_descs[bdi->da_fault_idx]
-				 * is aligned to a page boundary
-				 */
-				if (bdi->da_fault) {
-					descs = (struct hw_desc *)((char *)btsk->sub_descs +
-						 PAGE_SIZE);
-					btsk->sub_descs = descs - bdi->da_fault_idx;
-				}
-				btsk->edl = edl;
-			}
-			rc = init_batch_task(btsk_node->btsk, bsize, tflags, bopcode,
-					     buf_size, dflags);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			switch (bopcode) {
-			case DSA_OPCODE_NOOP:
-				dsa_prep_batch_noop(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_MEMMOVE:
-				clock_gettime(CLOCK_MONOTONIC, &dsa_times[9]);
-				dsa_prep_batch_memcpy(btsk_node->btsk);
-				clock_gettime(CLOCK_MONOTONIC, &dsa_times[10]);
-				lat.total_prep_time += ((dsa_times[10].tv_nsec) + (dsa_times[10].tv_sec * 1000000000))  -
-					((dsa_times[9].tv_nsec) + (dsa_times[9].tv_sec * 1000000000));
-				// printf("Prepare OP time: %lu\n", prep_op);
-				break;
-
-			case DSA_OPCODE_MEMFILL:
-				dsa_prep_batch_memfill(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_COMPARE:
-				dsa_prep_batch_compare(btsk_node->btsk);
-				break;
-			case DSA_OPCODE_COMPVAL:
-				dsa_prep_batch_compval(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_DUALCAST:
-				dsa_prep_batch_dualcast(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_TRANSL_FETCH:
-				dsa_prep_batch_transl_fetch(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_CR_DELTA:
-				dsa_prep_batch_cr_delta(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_AP_DELTA:
-				dsa_prep_batch_cr_delta(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_CRCGEN:
-				dsa_prep_batch_crcgen(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_COPY_CRC:
-				dsa_prep_batch_crc_copy(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_DIF_CHECK:
-				dsa_prep_batch_dif_check(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_DIF_INS:
-			case DSA_OPCODE_DIX_GEN:
-				dsa_prep_batch_dif_insert(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_DIF_STRP:
-				dsa_prep_batch_dif_strip(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_DIF_UPDT:
-				dsa_prep_batch_dif_update(btsk_node->btsk);
-				break;
-
-			case DSA_OPCODE_CFLUSH:
-				dsa_prep_batch_cflush(btsk_node->btsk);
-				break;
-
-			default:
-				err("Unsupported op %#x\n", bopcode);
-				return -EINVAL;
-			}
-
-			btsk_node = btsk_node->next;
-		}
-
-		btsk_node = ctx->multi_btask_node;
-		while (btsk_node) {
-			clock_gettime(CLOCK_MONOTONIC, &dsa_times[2]);
-			dsa_prep_batch(btsk_node->btsk, dflags);
-			clock_gettime(CLOCK_MONOTONIC, &dsa_times[3]);
-			lat.total_batch_prep_time += ((dsa_times[3].tv_nsec) + (dsa_times[3].tv_sec * 1000000000))  -
-					((dsa_times[2].tv_nsec) + (dsa_times[2].tv_sec * 1000000000));
-			// printf("Batch prep time: %lu\n", batch_prep_time);
-			dump_sub_desc(btsk_node->btsk);
-			btsk_node = btsk_node->next;
-		}
-
-		btsk_node = ctx->multi_btask_node;
-		while (btsk_node) {
-			if (tflags & TEST_FLAGS_BTFLT) {
-				madvise(btsk_node->btsk->sub_descs,
-					PAGE_ALIGN(64 * btsk_node->btsk->task_num),
-					MADV_DONTNEED);
-				mprotect(btsk_node->btsk->sub_descs,
-					 PAGE_ALIGN(64 * btsk_node->btsk->task_num), PROT_NONE);
-			}
-
-			if (tflags & TEST_FLAGS_CPFLT)
-				madvise(btsk_node->btsk->sub_comps,
-					PAGE_SIZE * btsk_node->btsk->task_num,
-					MADV_DONTNEED);
-
-			if (edl) {
-				struct batch_task *btsk = btsk_node->btsk;
-				struct batch_desc_info *bdi = &edl->bdi;
-
-				for (i = 0; i < (int)bsize; i++) {
-					struct desc_info *di = &edl->di[i];
-
-					if (di->desc_fault) {
-						madvise(btsk->sub_tasks[i].src1,
-							PAGE_SIZE, MADV_DONTNEED);
-						mprotect(btsk->sub_tasks[i].src1,
-							 PAGE_SIZE, PROT_NONE);
-					}
-					if (di->cp_fault)
-						madvise(btsk->sub_tasks[i].comp,
-							PAGE_SIZE, MADV_DONTNEED);
-					if (di->cp_wr_fail) {
-						madvise(btsk->sub_tasks[i].comp,
-							PAGE_SIZE, MADV_DONTNEED);
-						mprotect(btsk->sub_tasks[i].comp,
-							 PAGE_SIZE, PROT_NONE);
-					}
-					if (di->fence)
-						btsk->sub_descs[i].flags |= IDXD_OP_FLAG_FENCE;
-				}
-
-				if (bdi->bc_fault) {
-					madvise(btsk->core_task->comp, PAGE_SIZE, MADV_DONTNEED);
-					if (bdi->bc_wr_fail) {
-						madvise(btsk->core_task->comp,
-							PAGE_SIZE, MADV_DONTNEED);
-						mprotect(btsk->core_task->comp,
-							 PAGE_SIZE, PROT_NONE);
-					}
-				}
-
-				if (bdi->da_fault) {
-					madvise(&btsk->sub_descs[bdi->da_fault_idx],
-						PAGE_SIZE, MADV_DONTNEED);
-					mprotect(&btsk->sub_descs[bdi->da_fault_idx],
-						 PAGE_SIZE, PROT_NONE);
-				}
-			}
-			clock_gettime(CLOCK_MONOTONIC, &dsa_times[4]);
-			acctest_desc_submit(ctx, btsk_node->btsk->core_task->desc);
-			clock_gettime(CLOCK_MONOTONIC, &dsa_times[5]);
-			lat.total_sub_time += ((dsa_times[5].tv_nsec) + (dsa_times[5].tv_sec * 1000000000))  -
-					((dsa_times[4].tv_nsec) + (dsa_times[4].tv_sec * 1000000000));
-			// printf("Batch submit time: %lu\n", batch_submit_time);
-			btsk_node = btsk_node->next;
-		}
-
-		btsk_node = ctx->multi_btask_node;
-		while (btsk_node) {
-			if (edl && btsk_node->btsk->edl->bdi.bc_wr_fail) {
-				info("batch completion unmapped not checking completions, done\n");
-				return 0;
-			}
-			clock_gettime(CLOCK_MONOTONIC, &dsa_times[6]);
-			rc = dsa_wait_batch(btsk_node->btsk, ctx);
-			clock_gettime(CLOCK_MONOTONIC, &dsa_times[7]);
-			lat.total_wait_time += ((dsa_times[7].tv_nsec) + (dsa_times[7].tv_sec * 1000000000))  -
-					((dsa_times[6].tv_nsec) + (dsa_times[6].tv_sec * 1000000000));
-			// printf("Batch wait time: %lu\n", batch_wait_time);
-			if (rc != ACCTEST_STATUS_OK) {
-				err("batch failed stat %d\n", rc);
-				return rc;
-			}
-			btsk_node = btsk_node->next;
-		}
-
-		/* ap delta test. First run cr delta, then run ap delta */
-		if (bopcode == DSA_OPCODE_AP_DELTA) {
-			btsk_node = ctx->multi_btask_node;
-			while (btsk_node) {
-				dsa_prep_batch_ap_delta(btsk_node->btsk);
-				btsk_node = btsk_node->next;
-			}
-
-			btsk_node = ctx->multi_btask_node;
-			while (btsk_node) {
-				dsa_prep_batch(btsk_node->btsk, dflags);
-				dump_sub_desc(btsk_node->btsk);
-				btsk_node = btsk_node->next;
-			}
-
-			btsk_node = ctx->multi_btask_node;
-			while (btsk_node) {
-				acctest_desc_submit(ctx, btsk_node->btsk->core_task->desc);
-				btsk_node = btsk_node->next;
-			}
-
-			btsk_node = ctx->multi_btask_node;
-			while (btsk_node) {
-				rc = dsa_wait_batch(btsk_node->btsk, ctx);
-				if (rc != ACCTEST_STATUS_OK) {
-					err("batch failed stat %d\n", rc);
-					return rc;
-				}
-				btsk_node = btsk_node->next;
-			}
-		}
-
-		btsk_node = ctx->multi_btask_node;
-		while (btsk_node) {
-			rc = batch_result_verify(btsk_node->btsk, dflags & IDXD_OP_FLAG_BOF,
-						 tflags & TEST_FLAGS_CPFLT);
-			if (rc != ACCTEST_STATUS_OK) {
-				err("batch verification failed stat %d\n", rc);
-				return rc;
-			}
-
-			if (edl) {
-				struct batch_task *btsk = btsk_node->btsk;
-				struct batch_desc_info *bdi = &edl->bdi;
-				struct hw_desc *descs;
-
-				if (bdi->da_fault) {
-					descs = &btsk->sub_descs[bdi->da_fault_idx];
-					btsk->sub_descs = (struct hw_desc *)((char *)descs
-							   - PAGE_SIZE);
-				}
-			}
-
-			btsk_node = btsk_node->next;
-		}
-
-		acctest_free_task(ctx);
-		itr = itr - range;
-	}
-
-	return rc;
-}
-
-static int test_dif(struct acctest_context *ctx, size_t buf_size,
-		    int tflags, uint32_t opcode, int num_desc)
+static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
+		       int extra_flags_2, int extra_flags_3, uint32_t opcode, int num_desc)
 {
 	struct task_node *tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
 
-	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
+	info("test filter: opcode %d len %#lx tflags %#x num_desc %ld\n",
 	     opcode, buf_size, tflags, num_desc);
 
 	ctx->is_batch = 0;
@@ -365,566 +98,172 @@ static int test_dif(struct acctest_context *ctx, size_t buf_size,
 		rc = acctest_alloc_multiple_tasks(ctx, i);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
-
 		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
 		tsk_node = ctx->multi_task_node;
 		while (tsk_node) {
-			tsk_node->tsk->xfer_size = buf_size;
-			tsk_node->tsk->blk_idx_flg = get_dif_blksz_flg(tsk_node->tsk->xfer_size);
+			tsk_node->tsk->iaa_filter_flags = (uint32_t)extra_flags_2;
+			tsk_node->tsk->iaa_num_inputs = (uint32_t)extra_flags_3;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
+			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, 0);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
-
+			if(print_contents) {
+				printf("Filter source:\n");
+				print_elements(tsk_node->tsk->src1, tsk_node->tsk->xfer_size);
+			}
 			tsk_node = tsk_node->next;
 		}
-
-		switch (opcode) {
-		case DSA_OPCODE_DIF_CHECK:
-			rc = dsa_dif_check_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_DIF_INS:
-		case DSA_OPCODE_DIX_GEN:
-			rc = dsa_dif_ins_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_DIF_STRP:
-			rc = dsa_dif_strp_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_DIF_UPDT:
-			rc = dsa_dif_updt_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		default:
-			err("Unsupported op %#x\n", opcode);
-			return -EINVAL;
+		clock_gettime(CLOCK_MONOTONIC, &times[0]);
+		rc = iaa_scan_multi_task_nodes(ctx);
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+		scan_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
+			((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		/* Verification of all the nodes*/
+		rc = iaa_task_result_verify_task_nodes(ctx, 0);
+		if (rc != ACCTEST_STATUS_OK){
+			return rc;
+		}
+		//init select
+		tsk_node = ctx->multi_task_node;
+		while(tsk_node) {
+			memset_pattern(tsk_node->tsk->src2, 0, IAA_FILTER_MAX_SRC2_SIZE);
+			memset_pattern(tsk_node->tsk->output, 0, IAA_FILTER_MAX_SRC2_SIZE);
+			memcpy(tsk_node->tsk->src2, tsk_node->tsk->dst1,
+		       tsk_node->tsk->comp->iax_output_size);
+			//memset_pattern(tsk_node->tsk->src2, 0xa5a5a5a55a5a5a5a, IAA_FILTER_MAX_SRC2_SIZE);
+			tsk_node->tsk->iaa_src2_xfer_size = IAA_FILTER_MAX_SRC2_SIZE;
+			memset_pattern(tsk_node->tsk->dst1, 0, IAA_FILTER_MAX_DEST_SIZE);
+			tsk_node->tsk->dflags &= ~IDXD_OP_FLAG_RD_SRC2_AECS;
+			tsk_node->tsk->opcode = IAX_OPCODE_SELECT;
+			tsk_node = tsk_node->next;
+		}
+		clock_gettime(CLOCK_MONOTONIC, &times[0]);
+		rc = iaa_select_multi_task_nodes(ctx);
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+		select_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
+			((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		tsk_node = ctx->multi_task_node;
+		while(tsk_node) {
+			if(print_contents) {
+				printf("Filter destination:\n");
+				print_elements(tsk_node->tsk->dst1, tsk_node->tsk->comp->iax_output_size);
+			}
+			memcpy_src1 = tsk_node->tsk->dst1;
+			memcpy_size = tsk_node->tsk->comp->iax_output_size;
+			// printf("memcpy_size: %d\n", memcpy_size);
+			tsk_node = tsk_node->next;
 		}
 
 		/* Verification of all the nodes*/
-		rc = task_result_verify_task_nodes(ctx, 0);
+		rc = iaa_task_result_verify_task_nodes(ctx, 0);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
-
-		acctest_free_task(ctx);
+		//filter_free_task(ctx);
+		ctx->multi_task_node = NULL;
 		itr = itr - range;
 	}
-
 	return rc;
 }
 
-static int test_noop(struct acctest_context *ctx, int tflags, int num_desc)
+static int test_memcpy(struct acctest_context *dsa, size_t buf_size,
+					int tflags, uint32_t dsa_opcode, int num_desc)
 {
-	struct task_node *tsk_node;
-	int rc = ACCTEST_STATUS_OK;
-	int itr = num_desc, i = 0, range = 0;
-
-	info("testnoop: tflags %#x num_desc %ld\n", tflags, num_desc);
-
-	ctx->is_batch = 0;
-
-	if (ctx->dedicated == ACCFG_WQ_SHARED)
-		range = ctx->threshold;
-	else
-		range = ctx->wq_size;
-
-	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
-		i = (itr < range) ? itr : range;
-		/* Allocate memory to all the task nodes, desc, completion record*/
-		rc = acctest_alloc_multiple_tasks(ctx, i);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
-
-		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
-		tsk_node = ctx->multi_task_node;
-		while (tsk_node) {
-			tsk_node->tsk->opcode = DSA_OPCODE_NOOP;
-			tsk_node->tsk->test_flags = tflags;
-			tsk_node = tsk_node->next;
-		}
-
-		rc = dsa_noop_multi_task_nodes(ctx);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
-
-		/* Verification of all the nodes*/
-		tsk_node = ctx->multi_task_node;
-		while (tsk_node) {
-			rc = task_result_verify(tsk_node->tsk, 0);
-			tsk_node = tsk_node->next;
-		}
-
-		acctest_free_task(ctx);
-		itr = itr - range;
-	}
-
-	return rc;
-}
-
-static int test_memory(struct acctest_context *ctx, size_t buf_size,
-		       int tflags, uint32_t opcode, int num_desc)
-{
-	struct task_node *tsk_node;
-	int rc = ACCTEST_STATUS_OK;
-	int itr = num_desc, i = 0, range = 0;
-	struct timespec dsa_times[2];
-	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
-	     opcode, buf_size, tflags, num_desc);
-
-	ctx->is_batch = 0;
-
-	if (ctx->dedicated == ACCFG_WQ_SHARED)
-		range = ctx->threshold;
-	else
-		range = ctx->wq_size;
-
-	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
-		i = (itr < range) ? itr : range;
-		/* Allocate memory to all the task nodes, desc, completion record*/
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[0]);
-		rc = acctest_alloc_multiple_tasks(ctx, i);
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[1]);
-		lat.total_alloc_time += ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
-					((dsa_times[0].tv_nsec) + (dsa_times[0].tv_sec * 1000000000));
-			// printf("Work alloc time: %lu\n", alloc_time);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
-
-		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
-		tsk_node = ctx->multi_task_node;
-		while (tsk_node) {
-			tsk_node->tsk->xfer_size = buf_size;
-
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			tsk_node = tsk_node->next;
-		}
-
-		switch (opcode) {
-		case DSA_OPCODE_DRAIN:
-			rc = dsa_memcpy_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			rc = dsa_drain_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			rc = task_result_verify_task_nodes(ctx, 0);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_MEMMOVE:
-			rc = dsa_memcpy_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 0);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_MEMFILL:
-			rc = dsa_memfill_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 0);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_COMPARE:
-			rc = dsa_compare_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 0);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			info("Testing mismatch buffers\n");
-			tsk_node = ctx->multi_task_node;
-			while (tsk_node) {
-				((uint8_t *)(tsk_node->tsk->src1))[tsk_node->tsk->xfer_size / 2] =
-					0;
-				((uint8_t *)(tsk_node->tsk->src2))[tsk_node->tsk->xfer_size / 2] =
-					1;
-				memset(tsk_node->tsk->comp, 0,
-				       sizeof(struct completion_record));
-				tsk_node = tsk_node->next;
-			}
-
-			rc = dsa_compare_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 1);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_COMPVAL:
-			rc = dsa_compval_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 0);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			info("Testing mismatching buffers\n");
-			tsk_node = ctx->multi_task_node;
-			while (tsk_node) {
-				((uint8_t *)(tsk_node->tsk->src1))[tsk_node->tsk->xfer_size / 2] =
-				~(((uint8_t *)(tsk_node->tsk->src1))[tsk_node->tsk->xfer_size / 2]);
-				memset(tsk_node->tsk->comp, 0,
-				       sizeof(struct completion_record));
-				tsk_node = tsk_node->next;
-			}
-
-			rc = dsa_compval_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 1);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-		case DSA_OPCODE_DUALCAST:
-			rc = dsa_dualcast_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 0);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-		case DSA_OPCODE_TRANSL_FETCH:
-			rc = dsa_transl_fetch_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			/* Verification of all the nodes*/
-			rc = task_result_verify_task_nodes(ctx, 0);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-		case DSA_OPCODE_CFLUSH:
-			rc = dsa_cflush_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-		default:
-			err("Unsupported op %#x\n", opcode);
-			return -EINVAL;
-		}
-
-		acctest_free_task(ctx);
-		itr = itr - range;
-	}
-
-	return rc;
-}
-
-static int test_delta(struct acctest_context *ctx, size_t buf_size,
-		      int tflags, uint32_t opcode, int num_desc)
-{
-	struct task_node *tsk_node;
+	struct task_node *dsa_tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
 
 	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
-	     opcode, buf_size, tflags, num_desc);
+	     dsa_opcode, buf_size, tflags, num_desc);
 
-	ctx->is_batch = 0;
+	dsa->is_batch = 0;
 
-	if (ctx->dedicated == ACCFG_WQ_SHARED)
-		range = ctx->threshold;
+	if (dsa->dedicated == ACCFG_WQ_SHARED)
+		range = dsa->threshold;
 	else
-		range = ctx->wq_size;
+		range = dsa->wq_size;
 
 	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
 		i = (itr < range) ? itr : range;
-		/* Allocate memory to all the task nodes, desc, completion record*/
-		rc = acctest_alloc_multiple_tasks(ctx, i);
+		/*DSA: Allocate memory to all the task nodes, desc, completion record*/
+		rc = acctest_alloc_multiple_tasks(dsa, i);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 
-		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
-		tsk_node = ctx->multi_task_node;
-		while (tsk_node) {
-			tsk_node->tsk->xfer_size = buf_size;
+		/* DSA: allocate memory to src and dest buffers and fill in the desc for all the nodes*/
+		dsa_tsk_node = dsa->multi_task_node;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
+		while (dsa_tsk_node) {
+			dsa_tsk_node->tsk->xfer_size = memcpy_size;
+			rc = memcpy_init(dsa_tsk_node->tsk, tflags, dsa_opcode, memcpy_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
-			tsk_node = tsk_node->next;
+			dsa_tsk_node = dsa_tsk_node->next;
 		}
+		dsa_tsk_node = dsa->multi_task_node;
 
-		switch (opcode) {
-		case DSA_OPCODE_CR_DELTA:
-			rc = dsa_cr_delta_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_AP_DELTA:
-			rc = dsa_cr_delta_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			rc = dsa_ap_delta_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		default:
-			err("Unsupported op %#x\n", opcode);
-			return -EINVAL;
-		}
+		clock_gettime(CLOCK_MONOTONIC, &times[0]);
+		rc = dsa_memcpy_multi_task_nodes(dsa);
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+		memcpy_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
+					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
 
 		/* Verification of all the nodes*/
-		rc = task_result_verify_task_nodes(ctx, 0);
+		rc = task_result_verify_task_nodes(dsa, 0);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 
-		acctest_free_task(ctx);
-		itr = itr - range;
-	}
-
-	return rc;
-}
-
-static int test_crc(struct acctest_context *ctx, size_t buf_size,
-		    int tflags, uint32_t opcode, int num_desc)
-{
-	struct task_node *tsk_node;
-	int rc = ACCTEST_STATUS_OK;
-	int itr = num_desc, i = 0, range = 0;
-
-	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
-	     opcode, buf_size, tflags, num_desc);
-
-	ctx->is_batch = 0;
-
-	if (ctx->dedicated == ACCFG_WQ_SHARED)
-		range = ctx->threshold;
-	else
-		range = ctx->wq_size;
-
-	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
-		i = (itr < range) ? itr : range;
-		/* Allocate memory to all the task nodes, desc, completion record*/
-		rc = acctest_alloc_multiple_tasks(ctx, i);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
-
-		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
-		tsk_node = ctx->multi_task_node;
-		while (tsk_node) {
-			tsk_node->tsk->xfer_size = buf_size;
-
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-
-			tsk_node = tsk_node->next;
-		}
-
-		switch (opcode) {
-		case DSA_OPCODE_CRCGEN:
-			rc = dsa_crcgen_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		case DSA_OPCODE_COPY_CRC:
-			rc = dsa_crc_copy_multi_task_nodes(ctx);
-			if (rc != ACCTEST_STATUS_OK)
-				return rc;
-			break;
-
-		default:
-			err("Unsupported op %#x\n", opcode);
-			return -EINVAL;
-		}
-
-		/* Verification of all the nodes*/
-		rc = task_result_verify_task_nodes(ctx, 0);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
-
-		acctest_free_task(ctx);
-		itr = itr - range;
-	}
-
-	return rc;
-}
-
-static struct evl_desc_list *parse_evl_desc(char *s, int nr_desc)
-{
-	char *cur;
-	struct evl_desc_list *edl;
-	struct batch_desc_info *bdi;
-	int i;
-	unsigned char status;
-	int cp_fault;
-
-	cur = strtok(s, ":");
-	if (!cur)
-		return NULL;
-
-	edl = calloc(sizeof(*edl) + nr_desc * sizeof(edl->di[0]), 1);
-	if (!edl)
-		return NULL;
-
-	bdi = &edl->bdi;
-	if (sscanf(cur, "%d,%d,%d,%hu", &bdi->bc_fault, &bdi->bc_wr_fail, &bdi->da_fault,
-		   &bdi->da_fault_idx) < 4)
-		printf("%d: bc_fault %d bc_wr_fail %d da_fault %hu da_fault_idx\n",
-		       bdi->bc_fault, bdi->bc_wr_fail, bdi->da_fault, bdi->da_fault_idx);
-	if (bdi->da_fault) {
-		if (bdi->da_fault_idx >= nr_desc) {
-			err("desc addr fault idxd %d >= num desc in batch %d\n",
-			    bdi->da_fault_idx, nr_desc);
-			free(edl);
-			return NULL;
-		}
-	}
-
-	bdi->desc_completed = bdi->da_fault ? bdi->da_fault_idx : nr_desc;
-	bdi->status = bdi->da_fault ? DSA_COMP_BATCH_PAGE_FAULT :
-					DSA_COMP_SUCCESS;
-	bdi->result = 0;
-
-	i = 0;
-	cp_fault = 0;
-	status = DSA_COMP_SUCCESS;
-
-	while ((cur = strtok(NULL, ":")) && i < nr_desc) {
-		int nr_read;
-		struct desc_info *di = &edl->di[i];
-
-		nr_read = sscanf(cur, "%d,%d,%d,%d", &di->desc_fault,
-				 &di->cp_fault, &di->cp_wr_fail, &di->fence);
-		printf("%d: desc_fault %d cp_fault %d cp_wr_fail %d di_fence %d\n",
-		       i, di->desc_fault, di->cp_fault, di->cp_wr_fail, di->fence);
-
-		if (nr_read < 4)
-			break;
-
-		if (di->desc_fault || di->cp_wr_fail) {
-			bdi->status = DSA_COMP_BATCH_FAIL;
-			bdi->result = 1;
-		}
-
-		cp_fault = cp_fault | di->cp_fault;
-
-		if (di->fence && (status != DSA_COMP_SUCCESS || cp_fault)) {
-			if (cp_fault) {
-				bdi->status = DSA_COMP_BATCH_FAIL;
-				bdi->result = 1;
+		dsa_tsk_node = dsa->multi_task_node;
+		while(dsa_tsk_node) {
+			if(print_contents) {
+				printf("Memcpy destination:\n");
+				print_elements(dsa_tsk_node->tsk->dst1, memcpy_size);
 			}
-			bdi->desc_completed = i;
-			break;
+			dsa_tsk_node = dsa_tsk_node->next;
 		}
 
-		if (bdi->da_fault && i == bdi->da_fault_idx) {
-			bdi->status = DSA_COMP_BATCH_PAGE_FAULT;
-			break;
-		}
-
-		i++;
+		acctest_free_task(dsa);
+		itr = itr - range;
 	}
 
-	return edl;
+	return rc;
 }
+
 
 int main(int argc, char *argv[])
 {
-	struct acctest_context *dsa;
+	struct acctest_context *dsa, *iaa;
 	int rc = 0;
 	unsigned long buf_size = DSA_TEST_SIZE;
-	int wq_type = SHARED;
-	int opcode = DSA_OPCODE_MEMMOVE;
-	int bopcode = DSA_OPCODE_MEMMOVE;
-	int tflags = TEST_FLAGS_BOF;
+	int wq_type = DEDICATED;
+	int dsa_opcode = DSA_OPCODE_MEMMOVE;
+	int iaa_opcode = IAX_OPCODE_SCAN;
 	int opt;
-	unsigned int bsize = 0;
-	char dev_type[MAX_DEV_LEN];
+	int tflags = TEST_FLAGS_BOF;
 	int wq_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	int dev_id = ACCTEST_DEVICE_ID_NO_INPUT;
-	int dev_wq_id = ACCTEST_DEVICE_ID_NO_INPUT;
-	struct evl_desc_list *edl = NULL;
-	char *edl_str = NULL;
 	unsigned int num_desc = 1;
-	int num_iter = 1;
-	bool do_sync = false;
+	unsigned int num_iter = 1;
+	// int extra_flags_1 = 0;
+	int extra_flags_2 = 0x7c;
+	int extra_flags_3 = 0;
 
-	while ((opt = getopt(argc, argv, "e:w:l:f:o:b:c:d:n:t:p:vh:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "w:l:i:t:vh")) != -1) {
 		switch (opt) {
-		case 'e':
-			edl_str = optarg;
-			break;
 		case 'w':
 			wq_type = atoi(optarg);
 			break;
 		case 'l':
 			buf_size = strtoul(optarg, NULL, 0);
 			break;
-		case 'f':
-			tflags = strtoul(optarg, NULL, 0);
-			break;
-		case 'o':
-			opcode = strtoul(optarg, NULL, 0);
-			break;
-		case 'b':
-			bopcode = strtoul(optarg, NULL, 0);
-			break;
-		case 'c':
-			bsize = strtoul(optarg, NULL, 0);
-			break;
-		case 'd':
-			if (sscanf(optarg, "%[a-z]%u/%*[a-z]%u.%u", dev_type,
-				   &dev_id, &dev_wq_id, &wq_id) != 4) {
-				err("invalid input device:dev_wq_id:%d ,wq_id:%d\n",
-				    dev_wq_id, wq_id);
-				return -EINVAL;
-			}
-			break;
-		case 'n':
-			num_desc = strtoul(optarg, NULL, 0);
-			if(do_sync){
-				info("num_desc is overridden to 1 for sync operation\n");
-				num_desc = 1;
-			}
-			break;
-		case 's':
+		case 'i':
 			num_iter = strtoul(optarg, NULL, 0);
-			num_desc = 1;
-			do_sync = true;
-			info("Overriding num_desc to 1 for sync operation\n");
 			break;
 		case 't':
 			ms_timeout = strtoul(optarg, NULL, 0);
@@ -932,26 +271,35 @@ int main(int argc, char *argv[])
 		case 'v':
 			debug_logging = 1;
 			break;
-		case 'h':
-			usage();
-			exit(0);
 		default:
 			break;
 		}
 	}
+	extra_flags_3 = buf_size/4;
+	printf("size = %ld, num_iter = %u, num_elements = %d\n", buf_size, num_iter, extra_flags_3);
 
+	// iaa setup
+	iaa = acctest_init(tflags);
+	iaa->dev_type = ACCFG_DEVICE_IAX;
+
+	if (!iaa)
+		return -ENOMEM;
+
+	rc = acctest_alloc(iaa, wq_type, dev_id, wq_id);
+	if (rc < 0)
+		return -ENOMEM;
+
+	if (buf_size > iaa->max_xfer_size) {
+		err("invalid transfer size: %lu\n", buf_size);
+		return -EINVAL;
+	}
+
+	// DSA setup
 	dsa = acctest_init(tflags);
 	dsa->dev_type = ACCFG_DEVICE_DSA;
 
 	if (!dsa)
 		return -ENOMEM;
-
-	if (edl_str && opcode == 1) {
-		edl = parse_evl_desc(edl_str, bsize);
-		if (!edl)
-			return -EINVAL;
-		dsa->is_evl_test = 1;
-	}
 
 	rc = acctest_alloc(dsa, wq_type, dev_id, wq_id);
 	if (rc < 0)
@@ -962,84 +310,28 @@ int main(int argc, char *argv[])
 		return -EINVAL;
 	}
 
-	switch (opcode) {
-	case DSA_OPCODE_NOOP:
-		rc = test_noop(dsa, tflags, num_desc);
+	for(unsigned int i = 0; i < num_iter; i++) {
+		rc = test_filter(iaa, buf_size, tflags, extra_flags_2,
+			extra_flags_3, iaa_opcode, num_desc);
 		if (rc != ACCTEST_STATUS_OK)
 			goto error;
-		break;
-
-	case DSA_OPCODE_BATCH:
-		if (bsize > dsa->max_batch_size || bsize < 2) {
-			err("invalid num descs: %d\n", bsize);
-			rc = -EINVAL;
-			goto error;
-		}
-		if(do_sync){
-			for(int i=0; i<num_iter; i++){
-				rc = test_batch(dsa, edl, buf_size, tflags, bopcode, bsize, num_desc);
-				if (rc != ACCTEST_STATUS_OK)
-					goto error;
-			}
-			print_stats(num_iter);
-		} else {
-			rc = test_batch(dsa, edl, buf_size, tflags, bopcode, bsize, num_desc);
-			print_stats(num_desc);
-		}
-		break;
-
-	case DSA_OPCODE_DRAIN:
-	case DSA_OPCODE_MEMMOVE:
-	case DSA_OPCODE_MEMFILL:
-	case DSA_OPCODE_COMPARE:
-	case DSA_OPCODE_COMPVAL:
-	case DSA_OPCODE_DUALCAST:
-	case DSA_OPCODE_TRANSL_FETCH:
-	case DSA_OPCODE_CFLUSH:
-		if(do_sync){
-			for(int i=0; i<num_iter; i++){
-				rc = test_memory(dsa, buf_size, tflags, opcode, num_desc);
-				if (rc != ACCTEST_STATUS_OK)
-					goto error;
-			}
-			print_stats(num_iter);
-		} else {
-			rc = test_memory(dsa, buf_size, tflags, opcode, num_desc);
-			print_stats(num_desc);
-		}
-		break;
-
-	case DSA_OPCODE_CR_DELTA:
-	case DSA_OPCODE_AP_DELTA:
-		rc = test_delta(dsa, buf_size, tflags, opcode, num_desc);
+		clock_gettime(CLOCK_MONOTONIC, &times[0]);
+		shuffle_elements(memcpy_src1, memcpy_size);
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+		shuffle_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
+		   ((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		rc = test_memcpy(dsa, buf_size, tflags, dsa_opcode, num_desc);
 		if (rc != ACCTEST_STATUS_OK)
 			goto error;
-		break;
-
-	case DSA_OPCODE_CRCGEN:
-	case DSA_OPCODE_COPY_CRC:
-		rc = test_crc(dsa, buf_size, tflags, opcode, num_desc);
-		if (rc != ACCTEST_STATUS_OK)
-			goto error;
-		break;
-
-	case DSA_OPCODE_DIF_CHECK:
-	case DSA_OPCODE_DIF_INS:
-	case DSA_OPCODE_DIF_STRP:
-	case DSA_OPCODE_DIF_UPDT:
-	case DSA_OPCODE_DIX_GEN:
-		rc = test_dif(dsa, buf_size, tflags, opcode, num_desc);
-		if (rc != ACCTEST_STATUS_OK)
-			goto error;
-		break;
-
-	default:
-		rc = -EINVAL;
-		break;
 	}
+	printf("Scan latency: %llu\n", scan_lat/num_iter);
+	printf("Select latency: %llu\n", select_lat/num_iter);
+	printf("Shuffle latency: %llu\n", shuffle_lat/num_iter);
+	printf("Memcpy latency: %llu\n", memcpy_lat/num_iter);
+
 
  error:
-	free(edl);
 	acctest_free(dsa);
+	acctest_free(iaa);
 	return rc;
 }

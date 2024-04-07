@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "iaa.h": "c",
+        "libaccel_config.h": "c",
+        "iaa_compress.h": "c",
+        "errno.h": "c",
+        "iaa_zcompress.h": "c",
+        "iaa_filter.h": "c",
+        "*.tcc": "c",
+        "unordered_map": "c",
+        "istream": "c",
+        "numeric": "c",
+        "ostream": "c",
+        "sstream": "c"
+    }
+}

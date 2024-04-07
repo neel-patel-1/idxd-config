@@ -34,20 +34,6 @@ static struct iaa_filter_aecs_t iaa_filter_aecs = {
 	.rsvd6 = 0
 };
 
-struct iaa_latencies lat;
-
-void print_stats(int num_iter) {
-	printf("Average decompress alloc time: %lu\n", lat.total_alloc_time[0]/num_iter);
-	printf("Average decompress prep time: %lu\n", lat.total_prep_time[0]/num_iter);
-	printf("Average decompress sub time: %lu\n", lat.total_sub_time[0]/num_iter);
-	printf("Average decompress wait time: %lu\n", lat.total_wait_time[0]/num_iter);
-
-	printf("Average filter alloc time: %lu\n", lat.total_alloc_time[1]/num_iter);
-	printf("Average filter prep time: %lu\n", lat.total_prep_time[1]/num_iter);
-	printf("Average filter sub time: %lu\n", lat.total_sub_time[1]/num_iter);
-	printf("Average filter wait time: %lu\n", lat.total_wait_time[1]/num_iter);
-}
-
 static int init_crc64(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size)
 {
 	tsk->pattern = 0x98765432abcdef01;
@@ -303,21 +289,21 @@ static int init_decompress(struct task *tsk, int tflags, int opcode, unsigned lo
 	return ACCTEST_STATUS_OK;
 }
 
-static uint32_t xorshift32(uint32_t *state) {
-    uint32_t x = *state;
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    *state = x;
-    return x;
-}
+// static uint32_t xorshift32(uint32_t *state) {
+//     uint32_t x = *state;
+//     x ^= x << 13;
+//     x ^= x >> 17;
+//     x ^= x << 5;
+//     *state = x;
+//     return x;
+// }
 
 static int init_scan(struct task *tsk, int tflags,
 		     int opcode, unsigned long src1_xfer_size, int chain)
 {
 	uint32_t i;
 	uint32_t pattern = 0x98765432;
-	uint32_t rng_state = (uint32_t)time(NULL);
+	// uint32_t rng_state = (uint32_t)time(NULL);
 
 	tsk->opcode = opcode;
 	tsk->test_flags = tflags;
@@ -333,20 +319,15 @@ static int init_scan(struct task *tsk, int tflags,
 		return -ENOMEM;
 	for (i = 0; i < (src1_xfer_size / 4); i++){
 		((uint32_t *)tsk->src1)[i] = pattern++;
-		// if (i % 8 == 0) {
-		// 	((uint32_t *)tsk->src1)[i] = pattern;
-		// } else {
-		// 	((uint32_t *)tsk->src1)[i] = xorshift32(&rng_state);
-		// }
 	}
 	memcpy(tsk->input, tsk->src1, src1_xfer_size);
 	if(chain == 0) {
-		tsk->src2 = aligned_alloc(32, IAA_FILTER_AECS_SIZE);
+		tsk->src2 = aligned_alloc(32, IAA_FILTER_MAX_SRC2_SIZE);
 		if (!tsk->src2)
 			return -ENOMEM;
 		memset_pattern(tsk->src2, 0, IAA_FILTER_AECS_SIZE);
-		iaa_filter_aecs.low_filter_param = 0x98765440;
-		iaa_filter_aecs.high_filter_param = 0x98765540;
+		iaa_filter_aecs.low_filter_param = 2557891648; // 0x98765440
+		iaa_filter_aecs.high_filter_param = 2557891904; // 0x98765540
 		memcpy(tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
 		tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
 	} else {
@@ -1164,17 +1145,12 @@ int iaa_zcompress16_multi_task_nodes(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
-	struct timespec iaa_times[10];
 
 	while (tsk_node) {
 		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
 		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
 			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		iaa_prep_zcompress16(tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
-		lat.total_prep_time[0] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
-			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		// printf("Work prep time: %lu\n", lat.total_prep_time);
 		tsk_node = tsk_node->next;
 	}
@@ -1182,22 +1158,14 @@ int iaa_zcompress16_multi_task_nodes(struct acctest_context *ctx)
 	info("Submitted all zcompress16 jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
-		lat.total_sub_time[0] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
-					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
 		// printf("Work sub time: %lu\n", lat.total_sub_time);
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
 		ret = iaa_wait_zcompress16(ctx, tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
-		lat.total_wait_time[0] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
-			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
 		// printf("Work wait time: %lu\n", lat.total_wait_time);
 		if (ret != ACCTEST_STATUS_OK)
 			info("Desc: %p failed with ret: %d\n",
@@ -1423,7 +1391,7 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
-	struct timespec iaa_times[10];
+	int total_preparations = 0;
 
 	// Compress
 	while (tsk_node) {
@@ -1476,7 +1444,6 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 
 	// Decompress
 	tsk_node = ctx->multi_task_node;
-	int total_preparations = 0;
 	while (tsk_node) {
 		memset_pattern(tsk_node->tsk->src1, 0, tsk_node->tsk->xfer_size);
 		memcpy(tsk_node->tsk->src1, tsk_node->tsk->dst1,
@@ -1502,11 +1469,7 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 						    IDXD_DECOMPRESS_FLAG_EN_DECOMPRESS);
 		tsk_node->tsk->iaa_max_dst_size = IAA_DECOMPRESS_MAX_DEST_SIZE;
 
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		iaa_prep_decompress(tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
-		lat.total_prep_time[0] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
-			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 		total_preparations++;
 	}
@@ -1514,22 +1477,14 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 	info("Submitted all decompress jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
-		lat.total_sub_time[0] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
-					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 	}
 
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
 		ret = iaa_wait_decompress(ctx, tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
-		lat.total_wait_time[0] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
-			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
 		if (ret != ACCTEST_STATUS_OK)
 			info("Desc: %p failed with ret: %d\n",
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
@@ -1566,7 +1521,6 @@ int iaa_scan_multi_task_nodes(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
-	struct timespec iaa_times[10];
 
 	while (tsk_node) {
 		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
@@ -1574,11 +1528,7 @@ int iaa_scan_multi_task_nodes(struct acctest_context *ctx)
 			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
 
 		tsk_node->tsk->dflags |= IDXD_OP_FLAG_RD_SRC2_AECS;
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		iaa_prep_scan(tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
-		lat.total_prep_time[1] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
-			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 
 		tsk_node = tsk_node->next;
 	}
@@ -1586,21 +1536,13 @@ int iaa_scan_multi_task_nodes(struct acctest_context *ctx)
 	info("Submitted all scan jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
-		lat.total_sub_time[1] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
-					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
 		ret = iaa_wait_scan(ctx, tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
-		lat.total_wait_time[1] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
-			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
 
 		if (ret != ACCTEST_STATUS_OK) {
 			info("Desc: %p failed with ret: %d\n",
@@ -1651,7 +1593,6 @@ int iaa_scdc_multi_task_nodes_hw(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
-	struct timespec iaa_times[10];
 
 	// Compress
 	while (tsk_node) {
@@ -1723,32 +1664,20 @@ int iaa_scdc_multi_task_nodes_hw(struct acctest_context *ctx)
 		memcpy(tsk_node->tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
 		tsk_node->tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
 
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		iaa_prep_scan_wth_decompress(tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
-		lat.total_prep_time[1] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
-			((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 	}
 
 	info("Submitted all scan jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[3]);
-		lat.total_sub_time[1] += ((iaa_times[3].tv_nsec) + (iaa_times[3].tv_sec * 1000000000))  -
-					((iaa_times[2].tv_nsec) + (iaa_times[2].tv_sec * 1000000000));
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[4]);
 		ret = iaa_wait_scan(ctx, tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[5]);
-		lat.total_wait_time[1] += ((iaa_times[5].tv_nsec) + (iaa_times[5].tv_sec * 1000000000))  -
-			((iaa_times[4].tv_nsec) + (iaa_times[4].tv_sec * 1000000000));
 
 		if (ret != ACCTEST_STATUS_OK) {
 			info("Desc: %p failed with ret: %d\n",

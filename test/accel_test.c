@@ -404,8 +404,6 @@ void memset_calgary(void *dst, size_t len){
 				1, len, calgaryTracker.f);
 	}
 	memcpy(dst, calgaryTracker.fBuf, len);
-
-
 }
 
 /* the pattern is 8 bytes long while the dst can with any length */

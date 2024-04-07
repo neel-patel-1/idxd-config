@@ -43,8 +43,6 @@ struct dsa_latencies {
     uint64_t total_wait_time;
 };
 
-extern struct dsa_latencies lat;
-
 /* dump all sub descriptors for a batch task */
 static inline void dump_sub_desc(struct batch_task *btsk)
 {
@@ -84,7 +82,7 @@ int init_dif_ins(struct task *tsk, int tflags, int opcode, unsigned long xfer_si
 int init_dif_strp(struct task *tsk, int tflags, int opcode, unsigned long xfer_size);
 int init_dif_updt(struct task *tsk, int tflags, int opcode, unsigned long xfer_size);
 int init_cflush(struct task *tsk, int tflags, int opcode, unsigned long xfer_size);
-int init_task(struct task *tsk, int tflags, int opcode,
+int dsa_init_task(struct task *tsk, int tflags, int opcode,
 	      unsigned long xfer_size);
 
 int dsa_noop_multi_task_nodes(struct acctest_context *ctx);

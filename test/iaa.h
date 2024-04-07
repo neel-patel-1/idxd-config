@@ -16,10 +16,6 @@ struct iaa_latencies {
     uint64_t total_wait_time[2];
 };
 
-extern struct iaa_latencies lat;
-
-
-
 int iaa_noop_multi_task_nodes(struct acctest_context *ctx);
 int iaa_crc64_multi_task_nodes(struct acctest_context *ctx);
 int iaa_zcompress8_multi_task_nodes(struct acctest_context *ctx);
