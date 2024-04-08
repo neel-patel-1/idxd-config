@@ -21,7 +21,7 @@ long long select_lat = 0;
 long long shuffle_lat = 0;
 long long memcpy_lat = 0;
 struct timespec times[2];
-bool print_contents = false;
+bool print_contents = true;
 
 void *memcpy_src1;
 uint64_t memcpy_size;
@@ -145,7 +145,7 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 		select_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
 			((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
 		if (rc != ACCTEST_STATUS_OK)
-			return rc;
+			return rc;		
 		tsk_node = ctx->multi_task_node;
 		while(tsk_node) {
 			if(print_contents) {
