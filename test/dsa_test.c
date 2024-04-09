@@ -15,7 +15,16 @@
 
 //To run -> sudo ./test/dsa_test -w 1 -i 1000 -l <size>
 
-#define DSA_TEST_SIZE 1024
+static struct iaa_filter_aecs_t iaa_filter_aecs = {
+	.rsvd = 0,
+	.rsvd2 = 0,
+	.rsvd3 = 0,
+	.rsvd4 = 0,
+	.rsvd5 = 0,
+	.rsvd6 = 0
+};
+
+#define IMAGE_SIZE 196608
 long long scan_lat = 0;
 long long select_lat = 0;
 long long shuffle_lat = 0;
@@ -25,6 +34,106 @@ bool print_contents = true;
 
 void *memcpy_src1;
 uint64_t memcpy_size;
+
+static int read_bmp_to_buffer(const char *filepath, void **buffer, size_t *buffer_size) {
+
+    FILE *file = fopen(filepath, "rb");
+    if (!file) {
+		printf("No file\n");
+        return -errno;
+    }
+
+    // Read the BMP header
+    unsigned char header[54];
+    if (fread(header, 1, 54, file) != 54) {
+        fclose(file);
+        return -EINVAL; // Invalid file
+    }
+
+    // Check the BMP signature
+    if (header[0] != 'B' || header[1] != 'M') {
+        fclose(file);
+        return -EINVAL;
+    }
+
+    // Read image dimensions
+    int width = *(int*)&header[18];
+    int height = *(int*)&header[22];
+    int bitDepth = *(int*)&header[28];
+
+    if (bitDepth != 24) {
+        fclose(file);
+        return -EINVAL; // Not a 24-bit BMP
+    }
+
+    // Calculate the size of the image data
+    size_t row_padded = (width * 3 + 3) & (~3);
+    *buffer_size = row_padded * height;
+
+    // Allocate memory for the buffer
+    *buffer = aligned_alloc(ADDR_ALIGNMENT, *buffer_size);
+	if (!buffer)
+		return -ENOMEM;
+    if (!*buffer) {
+        fclose(file);
+        return -ENOMEM;
+    }
+
+    // Go to the beginning of the bitmap data
+    fseek(file, *(int*)&header[10], SEEK_SET);
+
+    // Read the bitmap data
+    for (int i = 0; i < height; i++) {
+        fread(*buffer + (row_padded * (height - i - 1)), 1, row_padded, file);
+    }
+
+    fclose(file);
+    return ACCTEST_STATUS_OK;
+}
+
+static int init_scan_from_bmp(struct task *tsk, int tflags, int opcode, const char *image_path) {
+	int status;
+    tsk->opcode = opcode;
+    tsk->test_flags = tflags;
+
+    // Reading the BMP file into src1
+    status = read_bmp_to_buffer(image_path, &tsk->src1, &tsk->xfer_size);
+    if (status != ACCTEST_STATUS_OK) {
+        // Handle error
+        return status;
+    }
+
+	tsk->input = aligned_alloc(32, tsk->xfer_size);
+	if (!tsk->input)
+		return -ENOMEM;
+
+
+	memcpy(tsk->input, tsk->src1, tsk->xfer_size);
+	printf("image size: %d\n", tsk->xfer_size);
+
+    tsk->src2 = aligned_alloc(32, IAA_FILTER_MAX_SRC2_SIZE);
+	if (!tsk->src2)
+		return -ENOMEM;
+	memset_pattern(tsk->src2, 0, IAA_FILTER_AECS_SIZE);
+	iaa_filter_aecs.low_filter_param = 0x000000;
+	iaa_filter_aecs.high_filter_param = 0xFFFFFF;
+	memcpy(tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
+	tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
+
+	tsk->dst1 = aligned_alloc(ADDR_ALIGNMENT, IAA_FILTER_MAX_DEST_SIZE);
+	if (!tsk->dst1)
+		return -ENOMEM;
+	memset_pattern(tsk->dst1, 0, IAA_FILTER_MAX_DEST_SIZE);
+
+	tsk->iaa_max_dst_size = IAA_FILTER_MAX_DEST_SIZE;
+
+	tsk->output = aligned_alloc(ADDR_ALIGNMENT, IAA_FILTER_MAX_DEST_SIZE);
+	if (!tsk->output)
+		return -ENOMEM;
+	memset_pattern(tsk->output, 0, IAA_FILTER_MAX_DEST_SIZE);
+
+	return ACCTEST_STATUS_OK;
+}
 
 static int memcpy_init(struct task *tsk, int tflags, int opcode, unsigned long xfer_size) {
 	unsigned long force_align = PAGE_SIZE;
@@ -65,13 +174,26 @@ static void shuffle_elements(void *array, size_t size) {
 }
 
 static void print_elements(void *array, size_t size) {
-	for (long unsigned int i = 0; i < (size / sizeof(uint32_t)); i++) {
-		printf("%10u ", ((uint32_t *)array)[i]);
+	unsigned char *bytes = (unsigned char *)array;
 
-		if ((i + 1) % 8 == 0)
-			printf("\n");
-	}
-	printf("\n");
+    // Calculate number of pixels (each pixel is 3 bytes for 24-bit images)
+    size_t numPixels = size / 3;
+
+    for (size_t i = 0; i < numPixels; i++) {
+        // Each pixel is represented by 3 bytes: R, G, B
+        unsigned char red = bytes[i * 3 + 2];   // Red
+        unsigned char green = bytes[i * 3 + 1]; // Green
+        unsigned char blue = bytes[i * 3];      // Blue
+
+        // Print the combined RGB value in hex format
+        printf("#%02X%02X%02X ", red, green, blue);
+
+        // New line after every 8 pixels for readability
+        if ((i + 1) % 8 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
 }
 
 
@@ -103,8 +225,8 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 		while (tsk_node) {
 			tsk_node->tsk->iaa_filter_flags = (uint32_t)extra_flags_2;
 			tsk_node->tsk->iaa_num_inputs = (uint32_t)extra_flags_3;
-
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, 0);
+			rc = init_scan_from_bmp(tsk_node->tsk, tflags, opcode, "./test/snail.bmp");
+			printf("rc: %d\n", rc);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 			if(print_contents) {
@@ -120,6 +242,11 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 			((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
+		tsk_node = ctx->multi_task_node;
+		if(print_contents) {
+			printf("Scan destination:\n");
+			print_elements(tsk_node->tsk->dst1, tsk_node->tsk->comp->iax_output_size);
+		}
 		/* Verification of all the nodes*/
 		rc = iaa_task_result_verify_task_nodes(ctx, 0);
 		if (rc != ACCTEST_STATUS_OK){
@@ -240,7 +367,7 @@ int main(int argc, char *argv[])
 {
 	struct acctest_context *dsa, *iaa;
 	int rc = 0;
-	unsigned long buf_size = DSA_TEST_SIZE;
+	unsigned long buf_size = IMAGE_SIZE;
 	int wq_type = DEDICATED;
 	int dsa_opcode = DSA_OPCODE_MEMMOVE;
 	int iaa_opcode = IAX_OPCODE_SCAN;
@@ -251,7 +378,7 @@ int main(int argc, char *argv[])
 	unsigned int num_desc = 1;
 	unsigned int num_iter = 1;
 	// int extra_flags_1 = 0;
-	int extra_flags_2 = 0x7c;
+	int extra_flags_2 = 0x5c;
 	int extra_flags_3 = 0;
 
 	while ((opt = getopt(argc, argv, "w:l:i:t:vh")) != -1) {
@@ -275,7 +402,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
-	extra_flags_3 = buf_size/4;
+	extra_flags_3 = buf_size/24;
 	printf("size = %ld, num_iter = %u, num_elements = %d\n", buf_size, num_iter, extra_flags_3);
 
 	// iaa setup
