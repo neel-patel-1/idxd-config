@@ -109,7 +109,7 @@ static int test_crc64(struct acctest_context *ctx, size_t buf_size, int tflags,
 		while (tsk_node) {
 			tsk_node->tsk->iaa_crc64_flags = extra_flags;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, 0);
+			rc = iaa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -166,7 +166,7 @@ static int test_zcompress(struct acctest_context *ctx, size_t buf_size,
 		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
 		tsk_node = ctx->multi_task_node;
 		while (tsk_node) {
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, 0);
+			rc = iaa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -275,7 +275,7 @@ static int test_compress(struct acctest_context *ctx, size_t buf_size, int tflag
 		while (tsk_node) {
 			tsk_node->tsk->iaa_compr_flags = extra_flags;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, 0);
+			rc = iaa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -344,7 +344,7 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 			tsk_node->tsk->iaa_filter_flags = (uint32_t)extra_flags_2;
 			tsk_node->tsk->iaa_num_inputs = (uint32_t)extra_flags_3;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, chain);
+			rc = iaa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -467,7 +467,7 @@ static int test_transl_fetch(struct acctest_context *ctx, size_t buf_size,
 		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
 		tsk_node = ctx->multi_task_node;
 		while (tsk_node) {
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, 0);
+			rc = iaa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -534,7 +534,7 @@ static int test_crypto(struct acctest_context *ctx, size_t buf_size, int tflags,
 		while (tsk_node) {
 			memcpy(&tsk_node->tsk->crypto_aecs, &crypto_aecs, 2);
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size, 0);
+			rc = iaa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 

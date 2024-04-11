@@ -11,42 +11,19 @@
 #include "dsa.h"
 #include "iaa.h"
 #include "algorithms/iaa_filter.h"
+#include <pthread.h>
 
-#define DSA_TEST_SIZE 4098
+#define DSA_TEST_SIZE 16384
 #define IAA_COMPRESS_AECS_SIZE (1568)
 #define IAA_COMPRESS_SRC2_SIZE (IAA_COMPRESS_AECS_SIZE * 2)
 #define IAA_COMPRESS_MAX_DEST_SIZE (2097152 * 2)
-#
 
 struct acctest_context *dsa, *iaa;
-int dsa_opcode = DSA_OPCODE_MEMMOVE;
-int iaa_opcode = IAX_OPCODE_COMPRESS;
 
-static int init_compress(struct task *tsk, int tflags, int opcode, 
-						unsigned long src1_xfer_size)
-{
-	tsk->pattern = 0x98765432abcdef01;
-	tsk->opcode = opcode;
-	tsk->test_flags = tflags;
-	tsk->xfer_size = src1_xfer_size;
-
-	tsk->src2 = aligned_alloc(32, IAA_COMPRESS_SRC2_SIZE);
-	if (!tsk->src2)
-		return -ENOMEM;
-	memset_pattern(tsk->src2, 0, IAA_COMPRESS_SRC2_SIZE);
-
-	tsk->dst1 = aligned_alloc(32, IAA_COMPRESS_MAX_DEST_SIZE);
-	if (!tsk->dst1)
-		return -ENOMEM;
-	memset_pattern(tsk->dst1, 0, IAA_COMPRESS_MAX_DEST_SIZE);
-
-	tsk->output = aligned_alloc(32, IAA_COMPRESS_MAX_DEST_SIZE);
-	if (!tsk->output)
-		return -ENOMEM;
-	memset_pattern(tsk->output, 0, IAA_COMPRESS_MAX_DEST_SIZE);
-
-	return ACCTEST_STATUS_OK;
-}
+// Function prototypes
+void *memcpy_and_submit(void *arg);
+void *wait_for_iaa(void *arg);
+void *dsa_submit(void *arg);
 
 static int setup_dsa_iaa(int buf_size, int num_desc) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
@@ -54,7 +31,7 @@ static int setup_dsa_iaa(int buf_size, int num_desc) {
 	int tflags = 0x1;
 
 	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
-	     dsa_opcode, buf_size, tflags, num_desc);
+	     DSA_OPCODE_MEMMOVE, buf_size, tflags, num_desc);
 
 	dsa->is_batch = 0;
 
@@ -71,10 +48,10 @@ static int setup_dsa_iaa(int buf_size, int num_desc) {
 	while (dsa_tsk_node) {
 		dsa_tsk_node->tsk->xfer_size = buf_size;
 
-		rc = dsa_init_task(dsa_tsk_node->tsk, tflags, dsa_opcode, buf_size);
+		rc = dsa_init_task(dsa_tsk_node->tsk, tflags, DSA_OPCODE_MEMMOVE, buf_size);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
-		rc = init_compress(iaa_tsk_node->tsk, tflags, iaa_opcode, buf_size);
+		rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 		iaa_tsk_node = iaa_tsk_node->next;
@@ -83,40 +60,49 @@ static int setup_dsa_iaa(int buf_size, int num_desc) {
 	return rc;
 }
 
-static int restruc_func(void) {
+void *dsa_submit(void *arg) {
+	int rc = 0;
+	rc = dsa_memcpy_submit_task_nodes(dsa);
+	if (rc != ACCTEST_STATUS_OK)
+		pthread_exit((void *)rc);
+	pthread_exit((void *)ACCTEST_STATUS_OK);
+}
+
+void *memcpy_and_submit(void *arg) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
-	int rc = ACCTEST_STATUS_OK;
-	int itr = 0;
+    int rc;
+	// int itr = 0;
 	dsa_tsk_node = dsa->multi_task_node;
 	iaa_tsk_node = iaa->multi_task_node;
-	while (dsa_tsk_node) {
-		rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
-		iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
-		iaa_prep_sub_task_node(iaa, iaa_tsk_node);
-		dsa_tsk_node = dsa_tsk_node->next;
-		iaa_tsk_node = iaa_tsk_node->next;
-	}
-	iaa_tsk_node = iaa->multi_task_node;
-	while(iaa_tsk_node) {
-		rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
-		if (rc != ACCTEST_STATUS_OK)
-			info("Desc: %p failed with ret: %d\n",
-			     iaa_tsk_node->tsk->desc, iaa_tsk_node->tsk->comp->status);
-		iaa_tsk_node = iaa_tsk_node->next;
-	}
 
-	/* Verification of all the nodes*/
-	rc = task_result_verify_task_nodes(dsa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		return rc;
-	/* Verification of all the nodes*/
-	rc = task_result_verify_task_nodes(iaa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		return rc;
-	acctest_free_task(dsa);
-	return rc;
+    while (dsa_tsk_node) {
+		// printf("memcpy and submit itr: %d\n", itr++);
+        rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
+        if (rc != ACCTEST_STATUS_OK)
+            pthread_exit((void *)rc);
+        iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
+        iaa_prep_sub_task_node(iaa, iaa_tsk_node);
+        dsa_tsk_node = dsa_tsk_node->next;
+        iaa_tsk_node = iaa_tsk_node->next;
+    }
+
+    pthread_exit((void *)ACCTEST_STATUS_OK);
+}
+
+void *wait_for_iaa(void *arg) {
+    struct task_node *iaa_tsk_node = iaa->multi_task_node;
+    int rc;
+	// int itr = 0;
+
+    while(iaa_tsk_node) {
+		// printf("Wait for IAA itr: %d\n", itr++);
+        rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
+        if (rc != ACCTEST_STATUS_OK)
+            pthread_exit((void *)rc);
+        iaa_tsk_node = iaa_tsk_node->next;
+    }
+
+    pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
 
@@ -131,17 +117,21 @@ int main(int argc, char *argv[])
 	int wq_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	int dev_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	unsigned int num_desc = 1;
-	unsigned int num_iter = 1;
-	struct task_node *dsa_tsk_node;
+	// unsigned int num_iter = 1;
+	pthread_t dsa_wait_thread, iaa_wait_thread;
+	pthread_t dsa_submit_thread;
+	int rc0, rc1, rc2;
+	struct timespec times[2];
+	long long lat = 0;
 
 	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
 			break;
-		case 'i':
-			num_iter = strtoul(optarg, NULL, 0);
-			break;
+		// case 'i':
+		// 	num_iter = strtoul(optarg, NULL, 0);
+		// 	break;
 		case 't':
 			ms_timeout = strtoul(optarg, NULL, 0);
 			break;
@@ -191,12 +181,36 @@ int main(int argc, char *argv[])
 	rc = setup_dsa_iaa(buf_size, num_desc);
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
-	rc = dsa_memcpy_submit_task_nodes(dsa);
-	if (rc != ACCTEST_STATUS_OK)
+	clock_gettime(CLOCK_MONOTONIC, &times[0]);
+	pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
+	pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
+    pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
+
+	    // Wait for threads to finish
+	pthread_join(dsa_submit_thread, (void **)&rc0);
+    pthread_join(dsa_wait_thread, (void **)&rc1);
+    pthread_join(iaa_wait_thread, (void **)&rc2);
+	clock_gettime(CLOCK_MONOTONIC, &times[1]);
+
+	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
+					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+
+	if (rc0 != ACCTEST_STATUS_OK || rc1 != ACCTEST_STATUS_OK 
+		|| rc2 != ACCTEST_STATUS_OK)
 		goto error;
-	rc =  restruc_func();
+	// Final verification and cleanup
+    rc = task_result_verify_task_nodes(dsa, 0);
 	if (rc != ACCTEST_STATUS_OK)
-		goto error;
+		return rc;
+    rc = task_result_verify_task_nodes(iaa, 0);
+	if (rc != ACCTEST_STATUS_OK)
+		return rc;
+
+	printf("Total Latency: %lld ns\n", lat);
+	printf("Throughput: %f\n", (buf_size * num_desc)/(double)lat);
+
+    acctest_free_task(dsa);
+	acctest_free_task(iaa);
 
  error:
 	acctest_free(dsa);

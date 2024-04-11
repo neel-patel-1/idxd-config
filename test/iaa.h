@@ -7,7 +7,7 @@
 #include "accel_test.h"
 #include "accfg_test.h"
 
-int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain);
+int iaa_init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size);
 
 
 

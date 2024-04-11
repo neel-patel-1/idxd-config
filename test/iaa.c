@@ -234,10 +234,10 @@ static int init_compress(struct task *tsk, int tflags, int opcode, unsigned long
 	tsk->test_flags = tflags;
 	tsk->xfer_size = src1_xfer_size;
 
-	tsk->src1 = aligned_alloc(32, src1_xfer_size);
-	if (!tsk->src1)
-		return -ENOMEM;
-	memset_pattern(tsk->src1, tsk->pattern, src1_xfer_size);
+	// tsk->src1 = aligned_alloc(32, src1_xfer_size);
+	// if (!tsk->src1)
+	// 	return -ENOMEM;
+	// memset_pattern(tsk->src1, tsk->pattern, src1_xfer_size);
 
 	tsk->src2 = aligned_alloc(32, IAA_COMPRESS_SRC2_SIZE);
 	if (!tsk->src2)
@@ -299,44 +299,29 @@ static int init_decompress(struct task *tsk, int tflags, int opcode, unsigned lo
 // }
 
 static int init_scan(struct task *tsk, int tflags,
-		     int opcode, unsigned long src1_xfer_size, int chain)
+		     int opcode, unsigned long src1_xfer_size)
 {
 	uint32_t i;
 	uint32_t pattern = 0x98765432;
-	// uint32_t rng_state = (uint32_t)time(NULL);
 
 	tsk->opcode = opcode;
 	tsk->test_flags = tflags;
 	tsk->xfer_size = src1_xfer_size;
-	tsk->input_size = src1_xfer_size;
-
-	tsk->input = aligned_alloc(32, src1_xfer_size);
-	if (!tsk->input)
-		return -ENOMEM;
 
 	tsk->src1 = aligned_alloc(ADDR_ALIGNMENT, src1_xfer_size);
 	if (!tsk->src1)
 		return -ENOMEM;
-	for (i = 0; i < (src1_xfer_size / 4); i++){
+	for (i = 0; i < (src1_xfer_size / 4); i++)
 		((uint32_t *)tsk->src1)[i] = pattern++;
-	}
-	memcpy(tsk->input, tsk->src1, src1_xfer_size);
-	if(chain == 0) {
-		tsk->src2 = aligned_alloc(32, IAA_FILTER_MAX_SRC2_SIZE);
-		if (!tsk->src2)
-			return -ENOMEM;
-		memset_pattern(tsk->src2, 0, IAA_FILTER_AECS_SIZE);
-		iaa_filter_aecs.low_filter_param = 2557891648; // 0x98765440
-		iaa_filter_aecs.high_filter_param = 2557891904; // 0x98765540
-		memcpy(tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
-		tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
-	} else {
-		tsk->src2 = aligned_alloc(32, IAA_DECOMPRESS_SRC2_SIZE);
-		if (!tsk->src2)
-			return -ENOMEM;
-		memset_pattern(tsk->src2, 0, IAA_DECOMPRESS_SRC2_SIZE);
-	}
 
+	tsk->src2 = aligned_alloc(32, IAA_FILTER_AECS_SIZE);
+	if (!tsk->src2)
+		return -ENOMEM;
+	memset_pattern(tsk->src2, 0, IAA_FILTER_AECS_SIZE);
+	iaa_filter_aecs.low_filter_param = 0x98765440;
+	iaa_filter_aecs.high_filter_param = 0x98765540;
+	memcpy(tsk->src2, (void *)&iaa_filter_aecs, IAA_FILTER_AECS_SIZE);
+	tsk->iaa_src2_xfer_size = IAA_FILTER_AECS_SIZE;
 
 	tsk->dst1 = aligned_alloc(ADDR_ALIGNMENT, IAA_FILTER_MAX_DEST_SIZE);
 	if (!tsk->dst1)
@@ -864,7 +849,7 @@ static int init_decrypto(struct task *tsk, int tflags, int opcode, unsigned long
 	return ACCTEST_STATUS_OK;
 }
 
-int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain)
+int iaa_init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size)
 {
 	int rc = 0;
 
@@ -900,7 +885,7 @@ int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_
 		rc = init_decompress(tsk, tflags, opcode, src1_xfer_size);
 		break;
 	case IAX_OPCODE_SCAN:
-		rc = init_scan(tsk, tflags, opcode, src1_xfer_size, chain);
+		rc = init_scan(tsk, tflags, opcode, src1_xfer_size);
 		break;
 	case IAX_OPCODE_SET_MEMBERSHIP:
 		rc = init_set_membership(tsk, tflags, opcode, src1_xfer_size);
