@@ -22,15 +22,6 @@
 #define DSA_COMPL_RING_SIZE 64
 
 unsigned int dif_blk_arr[] = {512, 520, 4096, 4104};
-struct dsa_latencies lat;
-
-void print_stats(int num_iter) {
-		printf("Average alloc time: %lu\n", lat.total_alloc_time/num_iter);
-		printf("Average prep op time: %lu\n", lat.total_prep_time/num_iter);
-		printf("Average prep batch time: %lu\n", lat.total_batch_prep_time/num_iter);
-		printf("Average sub time: %lu\n", lat.total_sub_time/num_iter);
-		printf("Average wait time: %lu\n", lat.total_wait_time/num_iter);
-}
 
 int get_dif_blksz_flg(unsigned long xfer_size)
 {
@@ -478,7 +469,7 @@ int init_cflush(struct task *tsk, int tflags, int opcode, unsigned long xfer_siz
 }
 
 /* this function is re-used by batch task */
-int init_task(struct task *tsk, int tflags, int opcode,
+int dsa_init_task(struct task *tsk, int tflags, int opcode,
 	      unsigned long xfer_size)
 {
 	int rc = 0;
@@ -651,7 +642,7 @@ int init_batch_task(struct batch_task *btsk, int task_num, int tflags,
 		else
 			btsk->sub_tasks[i].comp = &btsk->sub_comps[i];
 		btsk->sub_tasks[i].dflags = dflags;
-		rc = init_task(&btsk->sub_tasks[i], tflags, opcode, xfer_size);
+		rc = dsa_init_task(&btsk->sub_tasks[i], tflags, opcode, xfer_size);
 		if (rc != ACCTEST_STATUS_OK) {
 			err("batch: init sub-task failed\n");
 			return rc;
@@ -790,7 +781,7 @@ again:
 		err("memcpy desc timeout\n");
 		return ACCTEST_STATUS_TIMEOUT;
 	}
-
+	
 	/* re-submit if PAGE_FAULT reported by HW && BOF is off */
 	if ((stat_val(comp->status) == DSA_COMP_PAGE_FAULT_NOBOF &&
 	     !(desc->flags & IDXD_OP_FLAG_BOF)) ||
@@ -804,7 +795,6 @@ again:
 
 int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 {
-	struct timespec dsa_times[10];
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
 
@@ -812,12 +802,7 @@ int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 		tsk_node->tsk->dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
 		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
 			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[0]);
 		dsa_prep_memcpy(tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[1]);
-		lat.total_prep_time += ((dsa_times[1].tv_nsec) + (dsa_times[1].tv_sec * 1000000000))  -
-					((dsa_times[0].tv_nsec) + (dsa_times[0].tv_sec * 1000000000));
-		// printf("Work prep time: %lu\n", prep_op);
 		tsk_node = tsk_node->next;
 	}
 
@@ -826,26 +811,44 @@ int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 	while (tsk_node) {
 		if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
 			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[2]);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[3]);
-		lat.total_sub_time += ((dsa_times[3].tv_nsec) + (dsa_times[3].tv_sec * 1000000000))  -
-					((dsa_times[2].tv_nsec) + (dsa_times[2].tv_sec * 1000000000));
 		// printf("Work sub time: %lu\n", submit_time);
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[4]);
 		ret = dsa_wait_memcpy(ctx, tsk_node->tsk);
-		clock_gettime(CLOCK_MONOTONIC, &dsa_times[5]);
-		lat.total_wait_time += ((dsa_times[5].tv_nsec) + (dsa_times[5].tv_sec * 1000000000))  -
-					((dsa_times[4].tv_nsec) + (dsa_times[4].tv_sec * 1000000000));
 		// printf("Work wait time: %lu\n", wait_time);
 		if (ret != ACCTEST_STATUS_OK)
 			info("Desc: %p failed with ret: %d\n",
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
+		tsk_node = tsk_node->next;
+	}
+
+	return ret;
+}
+
+int dsa_memcpy_submit_task_nodes(struct acctest_context *ctx)
+{
+	struct task_node *tsk_node = ctx->multi_task_node;
+	int ret = ACCTEST_STATUS_OK;
+
+	while (tsk_node) {
+		tsk_node->tsk->dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+		dsa_prep_memcpy(tsk_node->tsk);
+		tsk_node = tsk_node->next;
+	}
+
+	info("Submitted all memcpy jobs\n");
+	tsk_node = ctx->multi_task_node;
+	while (tsk_node) {
+		if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
+			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
+		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+		// printf("Work sub time: %lu\n", submit_time);
 		tsk_node = tsk_node->next;
 	}
 

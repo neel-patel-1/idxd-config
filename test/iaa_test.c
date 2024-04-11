@@ -145,7 +145,6 @@ static int test_zcompress(struct acctest_context *ctx, size_t buf_size,
 	struct task_node *tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
-	struct timespec iaa_times[2];
 
 	info("test zcompress: opcode %d len %#lx tflags %#x num_desc %ld\n",
 	     opcode, buf_size, tflags, num_desc);
@@ -159,13 +158,8 @@ static int test_zcompress(struct acctest_context *ctx, size_t buf_size,
 
 	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
 		i = (itr < range) ? itr : range;
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		/* Allocate memory to all the task nodes, desc, completion record*/
 		rc = acctest_alloc_multiple_tasks(ctx, i);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
-		lat.total_alloc_time[0] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
-				((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
-		// printf("Work alloc time: %lu\n", lat.total_alloc_time);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 
@@ -258,7 +252,6 @@ static int test_compress(struct acctest_context *ctx, size_t buf_size, int tflag
 	struct task_node *tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
-	struct timespec iaa_times[2];
 
 	info("test compress: opcode %d len %#lx tflags %#x num_desc %ld extra_flags %#lx\n",
 	     opcode, buf_size, tflags, num_desc, extra_flags);
@@ -272,12 +265,8 @@ static int test_compress(struct acctest_context *ctx, size_t buf_size, int tflag
 	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
 		i = (itr < range) ? itr : range;
 		/* Allocate memory to all the task nodes, desc, completion record*/
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		/* Allocate memory to all the task nodes, desc, completion record*/
 		rc = acctest_alloc_multiple_tasks(ctx, i);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
-		lat.total_alloc_time[0] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
-				((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 		info("Allocated memory for operation\n");
@@ -331,7 +320,6 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 	struct task_node *tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
-	struct timespec iaa_times[2];
 	int chain = 1;
 
 	info("test filter: opcode %d len %#lx tflags %#x num_desc %ld\n",
@@ -346,12 +334,8 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 
 	while (itr > 0 && rc == ACCTEST_STATUS_OK) {
 		i = (itr < range) ? itr : range;
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[0]);
 		/* Allocate memory to all the task nodes, desc, completion record*/
 		rc = acctest_alloc_multiple_tasks(ctx, i);
-		clock_gettime(CLOCK_MONOTONIC, &iaa_times[1]);
-		lat.total_alloc_time[1] += ((iaa_times[1].tv_nsec) + (iaa_times[1].tv_sec * 1000000000))  -
-				((iaa_times[0].tv_nsec) + (iaa_times[0].tv_sec * 1000000000));
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 		/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
@@ -713,7 +697,6 @@ int main(int argc, char *argv[])
 		rc = test_zcompress(iaa, buf_size, tflags, opcode, num_desc);
 		if (rc != ACCTEST_STATUS_OK)
 			goto error;
-		print_stats(num_iter);
 		break;
 
 	case IAX_OPCODE_COMPRESS:
@@ -724,10 +707,8 @@ int main(int argc, char *argv[])
 				if (rc != ACCTEST_STATUS_OK)
 					goto error;
 			}
-			print_stats(num_iter);
 		} else {
 			rc = test_compress(iaa, buf_size, tflags, extra_flags_1, opcode, num_desc);
-			print_stats(num_desc);
 		}
 		break;
 
@@ -745,13 +726,11 @@ int main(int argc, char *argv[])
 				if (rc != ACCTEST_STATUS_OK)
 					goto error;
 			}
-			print_stats(num_iter);
 		} else {
 			rc = test_filter(iaa, buf_size, tflags, extra_flags_2,
 				 extra_flags_3, opcode, num_desc);
 			if (rc != ACCTEST_STATUS_OK)
 					goto error;
-			print_stats(num_desc);
 		}
 		break;
 	case IAX_OPCODE_TRANSL_FETCH:
