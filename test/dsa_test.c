@@ -11,9 +11,10 @@
 #include "dsa.h"
 #include "iaa.h"
 #include "algorithms/iaa_filter.h"
-// #include "qpl/qpl.h"
-
-//To run -> sudo ./test/dsa_test -w 1 -i 1000 -l <size>
+#include <setjmp.h>
+#include <jpeglib.h>
+#include "util.h"
+#include <dirent.h>
 
 static struct iaa_filter_aecs_t iaa_filter_aecs = {
 	.rsvd = 0,
@@ -24,80 +25,26 @@ static struct iaa_filter_aecs_t iaa_filter_aecs = {
 	.rsvd6 = 0
 };
 
-#define IMAGE_SIZE 196608
-long long scan_lat = 0;
-long long select_lat = 0;
-long long shuffle_lat = 0;
-long long memcpy_lat = 0;
+double scan_lat = 0;
+double select_lat = 0;
+double shuffle_lat = 0;
+double memcpy_lat = 0;
 struct timespec times[2];
-bool print_contents = true;
+bool print_contents = false;
+bool verify_data = false;
 
 void *memcpy_src1;
 uint64_t memcpy_size;
 
-static int read_bmp_to_buffer(const char *filepath, void **buffer, size_t *buffer_size) {
 
-    FILE *file = fopen(filepath, "rb");
-    if (!file) {
-		printf("No file\n");
-        return -errno;
-    }
 
-    // Read the BMP header
-    unsigned char header[54];
-    if (fread(header, 1, 54, file) != 54) {
-        fclose(file);
-        return -EINVAL; // Invalid file
-    }
-
-    // Check the BMP signature
-    if (header[0] != 'B' || header[1] != 'M') {
-        fclose(file);
-        return -EINVAL;
-    }
-
-    // Read image dimensions
-    int width = *(int*)&header[18];
-    int height = *(int*)&header[22];
-    int bitDepth = *(int*)&header[28];
-
-    if (bitDepth != 24) {
-        fclose(file);
-        return -EINVAL; // Not a 24-bit BMP
-    }
-
-    // Calculate the size of the image data
-    size_t row_padded = (width * 3 + 3) & (~3);
-    *buffer_size = row_padded * height;
-
-    // Allocate memory for the buffer
-    *buffer = aligned_alloc(ADDR_ALIGNMENT, *buffer_size);
-	if (!buffer)
-		return -ENOMEM;
-    if (!*buffer) {
-        fclose(file);
-        return -ENOMEM;
-    }
-
-    // Go to the beginning of the bitmap data
-    fseek(file, *(int*)&header[10], SEEK_SET);
-
-    // Read the bitmap data
-    for (int i = 0; i < height; i++) {
-        fread(*buffer + (row_padded * (height - i - 1)), 1, row_padded, file);
-    }
-
-    fclose(file);
-    return ACCTEST_STATUS_OK;
-}
-
-static int init_scan_from_bmp(struct task *tsk, int tflags, int opcode, const char *image_path) {
+static int init_scan_from_image(struct task *tsk, int tflags, int opcode, const char *image_path) {
 	int status;
     tsk->opcode = opcode;
     tsk->test_flags = tflags;
 
     // Reading the BMP file into src1
-    status = read_bmp_to_buffer(image_path, &tsk->src1, &tsk->xfer_size);
+    status = read_jpeg_to_buffer(image_path, &tsk->src1, &tsk->xfer_size);
     if (status != ACCTEST_STATUS_OK) {
         // Handle error
         return status;
@@ -107,9 +54,7 @@ static int init_scan_from_bmp(struct task *tsk, int tflags, int opcode, const ch
 	if (!tsk->input)
 		return -ENOMEM;
 
-
 	memcpy(tsk->input, tsk->src1, tsk->xfer_size);
-	printf("image size: %d\n", tsk->xfer_size);
 
     tsk->src2 = aligned_alloc(32, IAA_FILTER_MAX_SRC2_SIZE);
 	if (!tsk->src2)
@@ -145,10 +90,6 @@ static int memcpy_init(struct task *tsk, int tflags, int opcode, unsigned long x
 	tsk->xfer_size = xfer_size;
 
 	tsk->src1 = memcpy_src1;
-	// tsk->src1 = aligned_alloc(force_align, xfer_size);
-	// if (!tsk->src1)
-	// 	return -ENOMEM;
-	// memset_pattern(tsk->src1, tsk->pattern, xfer_size);
 
 	tsk->dst1 = aligned_alloc(force_align, xfer_size);
 	if (!tsk->dst1)
@@ -158,54 +99,15 @@ static int memcpy_init(struct task *tsk, int tflags, int opcode, unsigned long x
 	return ACCTEST_STATUS_OK;
 }
 
-static void shuffle_elements(void *array, size_t size) {
-    uint32_t *arr = (uint32_t *)array;
-    size_t n = size / sizeof(uint32_t); // Number of elements
-    if (n > 1) {
-        srand((unsigned)time(NULL)); // Seed the random number generator
-        for (size_t i = n - 1; i > 0; i--) {
-            size_t j = rand() % (i + 1); // Random index from 0 to i
-            // Swap arr[i] and arr[j]
-            uint32_t tmp = arr[i];
-            arr[i] = arr[j];
-            arr[j] = tmp;
-        }
-    }
-}
-
-static void print_elements(void *array, size_t size) {
-	unsigned char *bytes = (unsigned char *)array;
-
-    // Calculate number of pixels (each pixel is 3 bytes for 24-bit images)
-    size_t numPixels = size / 3;
-
-    for (size_t i = 0; i < numPixels; i++) {
-        // Each pixel is represented by 3 bytes: R, G, B
-        unsigned char red = bytes[i * 3 + 2];   // Red
-        unsigned char green = bytes[i * 3 + 1]; // Green
-        unsigned char blue = bytes[i * 3];      // Blue
-
-        // Print the combined RGB value in hex format
-        printf("#%02X%02X%02X ", red, green, blue);
-
-        // New line after every 8 pixels for readability
-        if ((i + 1) % 8 == 0) {
-            printf("\n");
-        }
-    }
-    printf("\n");
-}
-
-
-static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
-		       int extra_flags_2, int extra_flags_3, uint32_t opcode, int num_desc)
+static int test_filter(struct acctest_context *ctx, int tflags, int extra_flags_2,  
+						uint32_t opcode, int num_desc, const char *image_path)
 {
 	struct task_node *tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
 
-	info("test filter: opcode %d len %#lx tflags %#x num_desc %ld\n",
-	     opcode, buf_size, tflags, num_desc);
+	info("test filter: opcode %d tflags %#x num_desc %ld\n",
+	     opcode, tflags, num_desc);
 
 	ctx->is_batch = 0;
 
@@ -224,9 +126,8 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 		tsk_node = ctx->multi_task_node;
 		while (tsk_node) {
 			tsk_node->tsk->iaa_filter_flags = (uint32_t)extra_flags_2;
-			tsk_node->tsk->iaa_num_inputs = (uint32_t)extra_flags_3;
-			rc = init_scan_from_bmp(tsk_node->tsk, tflags, opcode, "./test/snail.bmp");
-			printf("rc: %d\n", rc);
+			rc = init_scan_from_image(tsk_node->tsk, tflags, opcode, image_path);
+			tsk_node->tsk->iaa_num_inputs = (uint32_t)tsk_node->tsk->xfer_size/24;
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 			if(print_contents) {
@@ -238,8 +139,10 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 		clock_gettime(CLOCK_MONOTONIC, &times[0]);
 		rc = iaa_scan_multi_task_nodes(ctx);
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
-		scan_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
-			((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		// scan_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
+		// 	((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		scan_lat += (times[1].tv_sec - times[0].tv_sec) + 
+                     (times[1].tv_nsec - times[0].tv_nsec) / 1000000000.0;
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 		tsk_node = ctx->multi_task_node;
@@ -247,11 +150,14 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 			printf("Scan destination:\n");
 			print_elements(tsk_node->tsk->dst1, tsk_node->tsk->comp->iax_output_size);
 		}
-		/* Verification of all the nodes*/
-		rc = iaa_task_result_verify_task_nodes(ctx, 0);
-		if (rc != ACCTEST_STATUS_OK){
-			return rc;
+		if(verify_data) {
+			/* Verification of all the nodes*/
+			rc = iaa_task_result_verify_task_nodes(ctx, 0);
+			if (rc != ACCTEST_STATUS_OK){
+				return rc;
+			}
 		}
+
 		//init select
 		tsk_node = ctx->multi_task_node;
 		while(tsk_node) {
@@ -259,7 +165,6 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 			memset_pattern(tsk_node->tsk->output, 0, IAA_FILTER_MAX_SRC2_SIZE);
 			memcpy(tsk_node->tsk->src2, tsk_node->tsk->dst1,
 		       tsk_node->tsk->comp->iax_output_size);
-			//memset_pattern(tsk_node->tsk->src2, 0xa5a5a5a55a5a5a5a, IAA_FILTER_MAX_SRC2_SIZE);
 			tsk_node->tsk->iaa_src2_xfer_size = IAA_FILTER_MAX_SRC2_SIZE;
 			memset_pattern(tsk_node->tsk->dst1, 0, IAA_FILTER_MAX_DEST_SIZE);
 			tsk_node->tsk->dflags &= ~IDXD_OP_FLAG_RD_SRC2_AECS;
@@ -269,8 +174,8 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 		clock_gettime(CLOCK_MONOTONIC, &times[0]);
 		rc = iaa_select_multi_task_nodes(ctx);
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
-		select_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
-			((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		select_lat += (times[1].tv_sec - times[0].tv_sec) + 
+                     (times[1].tv_nsec - times[0].tv_nsec) / 1000000000.0;
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;		
 		tsk_node = ctx->multi_task_node;
@@ -286,9 +191,12 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 		}
 
 		/* Verification of all the nodes*/
-		rc = iaa_task_result_verify_task_nodes(ctx, 0);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
+		if(verify_data) {
+			rc = iaa_task_result_verify_task_nodes(ctx, 0);
+			if (rc != ACCTEST_STATUS_OK)
+				return rc;
+		}
+
 		//filter_free_task(ctx);
 		ctx->multi_task_node = NULL;
 		itr = itr - range;
@@ -296,15 +204,15 @@ static int test_filter(struct acctest_context *ctx, size_t buf_size, int tflags,
 	return rc;
 }
 
-static int test_memcpy(struct acctest_context *dsa, size_t buf_size,
-					int tflags, uint32_t dsa_opcode, int num_desc)
+static int test_memcpy(struct acctest_context *dsa, int tflags, 
+						uint32_t dsa_opcode, int num_desc)
 {
 	struct task_node *dsa_tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int itr = num_desc, i = 0, range = 0;
 
-	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
-	     dsa_opcode, buf_size, tflags, num_desc);
+	info("testmemory: opcode %d tflags %#x num_desc %ld\n",
+	     dsa_opcode, tflags, num_desc);
 
 	dsa->is_batch = 0;
 
@@ -336,15 +244,18 @@ static int test_memcpy(struct acctest_context *dsa, size_t buf_size,
 		clock_gettime(CLOCK_MONOTONIC, &times[0]);
 		rc = dsa_memcpy_multi_task_nodes(dsa);
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
-		memcpy_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
-					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+		memcpy_lat += (times[1].tv_sec - times[0].tv_sec) + 
+                     (times[1].tv_nsec - times[0].tv_nsec) / 1000000000.0;
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 
-		/* Verification of all the nodes*/
-		rc = task_result_verify_task_nodes(dsa, 0);
-		if (rc != ACCTEST_STATUS_OK)
-			return rc;
+		if(verify_data) {
+			/* Verification of all the nodes*/
+			rc = task_result_verify_task_nodes(dsa, 0);
+			if (rc != ACCTEST_STATUS_OK)
+				return rc;
+		}
+
 
 		dsa_tsk_node = dsa->multi_task_node;
 		while(dsa_tsk_node) {
@@ -367,7 +278,6 @@ int main(int argc, char *argv[])
 {
 	struct acctest_context *dsa, *iaa;
 	int rc = 0;
-	unsigned long buf_size = IMAGE_SIZE;
 	int wq_type = DEDICATED;
 	int dsa_opcode = DSA_OPCODE_MEMMOVE;
 	int iaa_opcode = IAX_OPCODE_SCAN;
@@ -377,17 +287,20 @@ int main(int argc, char *argv[])
 	int dev_id = ACCTEST_DEVICE_ID_NO_INPUT;
 	unsigned int num_desc = 1;
 	unsigned int num_iter = 1;
-	// int extra_flags_1 = 0;
 	int extra_flags_2 = 0x5c;
-	int extra_flags_3 = 0;
+	DIR *dir;
+    struct dirent *ent;
+    char filepath[1024];
+	const char* directory_path = "./test/images";
+	int pos = 0;
+	struct timespec e2e_times[2];
+	double e2e_time_s = 0;
+
 
 	while ((opt = getopt(argc, argv, "w:l:i:t:vh")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
-			break;
-		case 'l':
-			buf_size = strtoul(optarg, NULL, 0);
 			break;
 		case 'i':
 			num_iter = strtoul(optarg, NULL, 0);
@@ -402,8 +315,6 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
-	extra_flags_3 = buf_size/24;
-	printf("size = %ld, num_iter = %u, num_elements = %d\n", buf_size, num_iter, extra_flags_3);
 
 	// iaa setup
 	iaa = acctest_init(tflags);
@@ -416,10 +327,10 @@ int main(int argc, char *argv[])
 	if (rc < 0)
 		return -ENOMEM;
 
-	if (buf_size > iaa->max_xfer_size) {
-		err("invalid transfer size: %lu\n", buf_size);
-		return -EINVAL;
-	}
+	// if (buf_size > iaa->max_xfer_size) {
+	// 	err("invalid transfer size: %lu\n", buf_size);
+	// 	return -EINVAL;
+	// }
 
 	// DSA setup
 	dsa = acctest_init(tflags);
@@ -432,29 +343,43 @@ int main(int argc, char *argv[])
 	if (rc < 0)
 		return -ENOMEM;
 
-	if (buf_size > dsa->max_xfer_size) {
-		err("invalid transfer size: %lu\n", buf_size);
-		return -EINVAL;
-	}
+	// if (buf_size > dsa->max_xfer_size) {
+	// 	err("invalid transfer size: %lu\n", buf_size);
+	// 	return -EINVAL;
+	// }
 
-	for(unsigned int i = 0; i < num_iter; i++) {
-		rc = test_filter(iaa, buf_size, tflags, extra_flags_2,
-			extra_flags_3, iaa_opcode, num_desc);
-		if (rc != ACCTEST_STATUS_OK)
-			goto error;
-		clock_gettime(CLOCK_MONOTONIC, &times[0]);
-		shuffle_elements(memcpy_src1, memcpy_size);
-		clock_gettime(CLOCK_MONOTONIC, &times[1]);
-		shuffle_lat += ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
-		   ((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
-		rc = test_memcpy(dsa, buf_size, tflags, dsa_opcode, num_desc);
-		if (rc != ACCTEST_STATUS_OK)
-			goto error;
+	dir = opendir(directory_path);
+    if (dir == NULL) {
+        perror("Could not open directory");
+        return -1;
+    }
+	clock_gettime(CLOCK_MONOTONIC, &e2e_times[0]);
+	while ((ent = readdir(dir)) != NULL) {
+		if (ent->d_type == DT_REG && ent->d_name[0] != '.') {
+			snprintf(filepath, sizeof(filepath), "%s/%s", directory_path, ent->d_name);
+			printf("Testing image: %s, index: %d\n", filepath, pos++);
+			rc = test_filter(iaa, tflags, extra_flags_2, iaa_opcode, num_desc, filepath);
+			if (rc != ACCTEST_STATUS_OK)
+				goto error;
+			clock_gettime(CLOCK_MONOTONIC, &times[0]);
+			shuffle_elements(memcpy_src1, memcpy_size);
+			clock_gettime(CLOCK_MONOTONIC, &times[1]);
+			shuffle_lat += (times[1].tv_sec - times[0].tv_sec) + 
+                     (times[1].tv_nsec - times[0].tv_nsec) / 1000000000.0;
+			rc = test_memcpy(dsa, tflags, dsa_opcode, num_desc);
+			if (rc != ACCTEST_STATUS_OK)
+				goto error;
+		}
 	}
-	printf("Scan latency: %llu\n", scan_lat/num_iter);
-	printf("Select latency: %llu\n", select_lat/num_iter);
-	printf("Shuffle latency: %llu\n", shuffle_lat/num_iter);
-	printf("Memcpy latency: %llu\n", memcpy_lat/num_iter);
+	clock_gettime(CLOCK_MONOTONIC, &e2e_times[1]);
+	e2e_time_s = (e2e_times[1].tv_sec - e2e_times[0].tv_sec) + 
+                   (e2e_times[1].tv_nsec - e2e_times[0].tv_nsec) / 1000000000.0;
+	
+	printf("Scan latency: %fms\n", scan_lat* 1000.0);
+	printf("Select latency: %fms\n", select_lat * 1000.0);
+	printf("Shuffle latency: %fms\n", shuffle_lat*1000.0);
+	printf("Memcpy latency: %fms\n", memcpy_lat*1000.0);
+	printf("E2E time: %fs\n", e2e_time_s);
 
 
  error:

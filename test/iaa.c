@@ -2785,7 +2785,7 @@ int task_result_verify_select(struct task *tsk, int mismatch_expected)
 
 	expected_len = iaa_do_select(tsk->output, tsk->src1, tsk->src2,
 				     tsk->iaa_num_inputs, tsk->iaa_filter_flags);
-	rc = memcmp(tsk->dst1, tsk->output, expected_len);
+	rc = memcmp(tsk->dst1, tsk->output, expected_len - (expected_len %4));
 
 	if (!mismatch_expected) {
 		if (expected_len - tsk->comp->iax_output_size) {

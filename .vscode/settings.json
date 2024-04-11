@@ -11,6 +11,11 @@
         "istream": "c",
         "numeric": "c",
         "ostream": "c",
-        "sstream": "c"
+        "sstream": "c",
+        "cstdint": "cpp",
+        "user.h": "c",
+        "stdio.h": "c",
+        "mman.h": "c",
+        "util.h": "c"
     }
 }
