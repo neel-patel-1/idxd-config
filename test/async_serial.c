@@ -68,6 +68,27 @@ static int test_iaa(void) {
 	return rc;
 }
 
+static int host_op(void *buffer, size_t size) {
+	uint32_t *ptr;
+	size_t count;
+	size_t num_elements;
+    if (buffer == NULL || size % sizeof(uint32_t) != 0) {
+        return -1; 
+    }
+
+    ptr = (uint32_t *) buffer;
+    count = 0;
+    num_elements = size / sizeof(uint32_t);
+
+    for (size_t i = 0; i < num_elements; ++i) {
+        if (ptr[i] >= 10000) {
+            count++;
+        }
+    }
+	// printf("Count is : %d\n", count);
+    return count;
+}
+
 int main(int argc, char *argv[])
 {
 	int rc = 0;
@@ -80,6 +101,7 @@ int main(int argc, char *argv[])
 	unsigned int num_desc = 1;
 	struct timespec times[2];
 	long long lat = 0;
+	struct task_node *dsa_tsk_node;
 
 	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh")) != -1) {
 		switch (opt) {
@@ -144,7 +166,11 @@ int main(int argc, char *argv[])
     if (rc != ACCTEST_STATUS_OK)
 		goto error;
 
-    
+	dsa_tsk_node = dsa->multi_task_node;
+	while (dsa_tsk_node) {
+		host_op(dsa_tsk_node->tsk->dst1, buf_size);
+		dsa_tsk_node = dsa_tsk_node->next;
+	}
 
     rc = test_iaa();
     if (rc != ACCTEST_STATUS_OK)

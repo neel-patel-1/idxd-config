@@ -307,11 +307,11 @@ static int acctest_enqcmd(struct acctest_context *ctx, struct hw_desc *hw)
 	int retry_count = 0;
 	int ret = 0;
 
-	while (retry_count < 3) {
+	while (retry_count < 1000) {
 		if (!enqcmd(ctx->wq_reg, hw))
 			break;
 
-		info("retry\n");
+		// info("retry\n");
 		retry_count++;
 	}
 
@@ -386,12 +386,13 @@ int acctest_wait_on_desc_timeout(struct completion_record *comp,
 
 
 void memset_calgary(void *dst, size_t len){
+	uint64_t readLen;
 	if(calgaryTracker.fBuf == NULL){
 		calgaryTracker.f = fopen(CALGARY, "r");
 		calgaryTracker.fBuf = malloc(len);
 		info("Calgary open\n");
 	}
-	uint64_t readLen =
+	readLen =
 		fread((void *)calgaryTracker.fBuf,
 			1, len, calgaryTracker.f);
 	calgaryTracker.offset += readLen;

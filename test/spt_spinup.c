@@ -31,8 +31,9 @@ typedef struct {
 void *memcpy_and_submit(void *arg);
 void *wait_for_iaa(void *arg);
 void *dsa_submit(void *arg);
+void *host_operation_thread(void *arg);
 
-static int setup_dsa_iaa(int buf_size, int num_desc) {
+static int setup_dsa_iaa(int num_desc) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int tflags = 0x1;
@@ -68,13 +69,16 @@ static int setup_dsa_iaa(int buf_size, int num_desc) {
 }
 
 static int host_op(void *buffer, size_t size) {
+	uint32_t *ptr;
+	size_t count;
+	size_t num_elements;
     if (buffer == NULL || size % sizeof(uint32_t) != 0) {
         return -1; 
     }
 
-    uint32_t *ptr = (uint32_t *) buffer;
-    size_t count = 0;
-    size_t num_elements = size / sizeof(uint32_t);
+    ptr = (uint32_t *) buffer;
+    count = 0;
+    num_elements = size / sizeof(uint32_t);
 
     for (size_t i = 0; i < num_elements; ++i) {
         if (ptr[i] >= 10000) {
@@ -82,7 +86,6 @@ static int host_op(void *buffer, size_t size) {
         }
     }
 	// printf("Count is : %d\n", count);
-
     return count;
 }
 
@@ -90,7 +93,7 @@ void *dsa_submit(void *arg) {
 	int rc = 0;
 	rc = dsa_memcpy_submit_task_nodes(dsa);
 	if (rc != ACCTEST_STATUS_OK)
-		pthread_exit((void *)rc);
+		pthread_exit((void *)(intptr_t)rc);
 	pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
@@ -104,6 +107,8 @@ void *host_operation_thread(void *arg) {
 void *memcpy_and_submit(void *arg) {
     struct task_node *dsa_tsk_node, *iaa_tsk_node;
     int rc;
+	host_op_args *args;
+	pthread_t host_thread;
 
     dsa_tsk_node = dsa->multi_task_node;
     iaa_tsk_node = iaa->multi_task_node;
@@ -113,7 +118,7 @@ void *memcpy_and_submit(void *arg) {
         if (rc != ACCTEST_STATUS_OK)
             pthread_exit((void *)(intptr_t)rc);
 
-        host_op_args *args = malloc(sizeof(host_op_args));
+        args = malloc(sizeof(host_op_args));
         if (args == NULL) {
             pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
         }
@@ -121,7 +126,6 @@ void *memcpy_and_submit(void *arg) {
         args->size = buf_size;
 
         // Create a thread to perform the host operation
-        pthread_t host_thread;
         if (pthread_create(&host_thread, NULL, host_operation_thread, args) != 0) {
             free(args);  // Clean up if thread creation fails
             pthread_exit((void *)(intptr_t)errno);
@@ -149,7 +153,7 @@ void *wait_for_iaa(void *arg) {
 		// printf("Wait for IAA itr: %d\n", itr++);
         rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
-            pthread_exit((void *)rc);
+            pthread_exit((void *)(intptr_t)rc);
         iaa_tsk_node = iaa_tsk_node->next;
     }
 
@@ -228,7 +232,7 @@ int main(int argc, char *argv[])
 		return -EINVAL;
 	}
 
-	rc = setup_dsa_iaa(buf_size, num_desc);
+	rc = setup_dsa_iaa(num_desc);
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
 	clock_gettime(CLOCK_MONOTONIC, &times[0]);

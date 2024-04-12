@@ -26,7 +26,7 @@ void *memcpy_and_submit(void *arg);
 void *wait_for_iaa(void *arg);
 void *dsa_submit(void *arg);
 
-static int setup_dsa_iaa(int buf_size, int num_desc) {
+static int setup_dsa_iaa(int num_desc) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int tflags = 0x1;
@@ -62,13 +62,16 @@ static int setup_dsa_iaa(int buf_size, int num_desc) {
 }
 
 static int host_op(void *buffer, size_t size) {
+	uint32_t *ptr;
+	size_t count;
+	size_t num_elements;
     if (buffer == NULL || size % sizeof(uint32_t) != 0) {
         return -1; 
     }
 
-    uint32_t *ptr = (uint32_t *) buffer;
-    size_t count = 0;
-    size_t num_elements = size / sizeof(uint32_t);
+    ptr = (uint32_t *) buffer;
+    count = 0;
+    num_elements = size / sizeof(uint32_t);
 
     for (size_t i = 0; i < num_elements; ++i) {
         if (ptr[i] >= 10000) {
@@ -83,7 +86,7 @@ void *dsa_submit(void *arg) {
 	int rc = 0;
 	rc = dsa_memcpy_submit_task_nodes(dsa);
 	if (rc != ACCTEST_STATUS_OK)
-		pthread_exit((void *)rc);
+		pthread_exit((void *)(intptr_t)rc);
 	pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
@@ -98,7 +101,7 @@ void *memcpy_and_submit(void *arg) {
 		// printf("memcpy and submit itr: %d\n", itr++);
         rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
-            pthread_exit((void *)rc);
+            pthread_exit((void *)(intptr_t)rc);
 		host_op(dsa_tsk_node->tsk->dst1, buf_size);
         iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
         iaa_prep_sub_task_node(iaa, iaa_tsk_node);
@@ -118,7 +121,7 @@ void *wait_for_iaa(void *arg) {
 		// printf("Wait for IAA itr: %d\n", itr++);
         rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
-            pthread_exit((void *)rc);
+            pthread_exit((void *)(intptr_t)rc);
         iaa_tsk_node = iaa_tsk_node->next;
     }
 
@@ -197,7 +200,7 @@ int main(int argc, char *argv[])
 		return -EINVAL;
 	}
 
-	rc = setup_dsa_iaa(buf_size, num_desc);
+	rc = setup_dsa_iaa(num_desc);
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
 	clock_gettime(CLOCK_MONOTONIC, &times[0]);
