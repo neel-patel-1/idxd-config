@@ -18,8 +18,14 @@
 #define IAA_COMPRESS_SRC2_SIZE (IAA_COMPRESS_AECS_SIZE * 2)
 #define IAA_COMPRESS_MAX_DEST_SIZE (2097152 * 2)
 
-static unsigned long buf_size = DSA_TEST_SIZE;
 static struct acctest_context *dsa, *iaa;
+static unsigned long buf_size = DSA_TEST_SIZE;
+
+typedef struct {
+    void *buffer;
+    size_t size;
+    size_t count;  // Result from host_op
+} host_op_args;
 
 // Function prototypes
 void *memcpy_and_submit(void *arg);
@@ -76,6 +82,7 @@ static int host_op(void *buffer, size_t size) {
         }
     }
 	// printf("Count is : %d\n", count);
+
     return count;
 }
 
@@ -87,21 +94,45 @@ void *dsa_submit(void *arg) {
 	pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
+void *host_operation_thread(void *arg) {
+    host_op_args *args = (host_op_args *)arg;
+    args->count = host_op(args->buffer, args->size);  // Store the result in the structure
+
+    return NULL;  // Return nothing as the result is stored in the passed structure
+}
+
 void *memcpy_and_submit(void *arg) {
-	struct task_node *dsa_tsk_node, *iaa_tsk_node;
+    struct task_node *dsa_tsk_node, *iaa_tsk_node;
     int rc;
-	// int itr = 0;
-	dsa_tsk_node = dsa->multi_task_node;
-	iaa_tsk_node = iaa->multi_task_node;
+
+    dsa_tsk_node = dsa->multi_task_node;
+    iaa_tsk_node = iaa->multi_task_node;
 
     while (dsa_tsk_node) {
-		// printf("memcpy and submit itr: %d\n", itr++);
         rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
-            pthread_exit((void *)rc);
-		host_op(dsa_tsk_node->tsk->dst1, buf_size);
+            pthread_exit((void *)(intptr_t)rc);
+
+        host_op_args *args = malloc(sizeof(host_op_args));
+        if (args == NULL) {
+            pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+        }
+        args->buffer = dsa_tsk_node->tsk->dst1;
+        args->size = buf_size;
+
+        // Create a thread to perform the host operation
+        pthread_t host_thread;
+        if (pthread_create(&host_thread, NULL, host_operation_thread, args) != 0) {
+            free(args);  // Clean up if thread creation fails
+            pthread_exit((void *)(intptr_t)errno);
+        }
+
+        pthread_detach(host_thread);
+
+        // Continue with other operations
         iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
         iaa_prep_sub_task_node(iaa, iaa_tsk_node);
+
         dsa_tsk_node = dsa_tsk_node->next;
         iaa_tsk_node = iaa_tsk_node->next;
     }
