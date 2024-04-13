@@ -11,6 +11,7 @@
 #include "dsa.h"
 #include "iaa.h"
 #include "algorithms/iaa_filter.h"
+#include "util.h"
 #include <pthread.h>
 
 #define DSA_TEST_SIZE 16384
@@ -105,9 +106,7 @@ void *dsa_submit(void *arg) {
 }
 
 int shuffle_host_op(void *buffer, size_t size){
-	// for(size_t i = 0; i < size; i++){
-	// 	((uint8_t *)buffer)[i] = i;
-	// }
+	shuffle_elements(buffer, size);
 	return 1;
 }
 
