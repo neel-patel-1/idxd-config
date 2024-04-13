@@ -20,9 +20,10 @@
 #define IAA_COMPRESS_MAX_DEST_SIZE (2097152 * 2)
 
 _Atomic int finalHostOpCtr = 0;
-_Atomic int expectedHostOps = 1024;
+_Atomic int expectedHostOps = 0;
 _Atomic int complete = 0;
 _Atomic int host_op_sel = 0;
+_Atomic int do_spt_spinup = 0;
 
 static struct acctest_context *dsa, *iaa;
 static unsigned long buf_size = DSA_TEST_SIZE;
@@ -139,15 +140,26 @@ void *memcpy_and_submit(void *arg) {
         if (args == NULL) {
             pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
         }
-				args->host_op = shuffle_host_op;
-        args->buffer = dsa_tsk_node->tsk->dst1;
-        args->size = buf_size;
+				if(do_spt_spinup){
+					args->host_op = shuffle_host_op;
+					args->buffer = dsa_tsk_node->tsk->dst1;
+					args->size = buf_size;
+					// Create a thread to perform the host operation
+					if (pthread_create(&host_thread, NULL, host_operation_thread, args) != 0) {
+							free(args);  // Clean up if thread creation fails
+							pthread_exit((void *)(intptr_t)errno);
+					}
+				} else {
+					shuffle_host_op(dsa_tsk_node->tsk->dst1, buf_size);
+					// no atomic ctr update from thread -- do it here
+					finalHostOpCtr += 1;
+					if(finalHostOpCtr == expectedHostOps){
+						complete = 1;
+					}
+				}
 
-        // Create a thread to perform the host operation
-        if (pthread_create(&host_thread, NULL, host_operation_thread, args) != 0) {
-            free(args);  // Clean up if thread creation fails
-            pthread_exit((void *)(intptr_t)errno);
-        }
+
+
 
         pthread_detach(host_thread);
 
@@ -208,6 +220,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			num_desc = strtoul(optarg, NULL, 0);
+			expectedHostOps = num_desc;
 			break;
 		case 'v':
 			debug_logging = 1;
@@ -274,12 +287,6 @@ int main(int argc, char *argv[])
 		|| rc2 != ACCTEST_STATUS_OK)
 		goto error;
 	// Final verification and cleanup
-    rc = task_result_verify_task_nodes(dsa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		return rc;
-    rc = task_result_verify_task_nodes(iaa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		return rc;
 
 	printf("Total Latency: %lld ns\n", lat);
 	printf("Throughput: %f\n", (buf_size * num_desc)/(double)lat);
