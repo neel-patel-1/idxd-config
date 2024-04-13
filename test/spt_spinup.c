@@ -18,6 +18,10 @@
 #define IAA_COMPRESS_SRC2_SIZE (IAA_COMPRESS_AECS_SIZE * 2)
 #define IAA_COMPRESS_MAX_DEST_SIZE (2097152 * 2)
 
+_Atomic int finalHostOpCtr = 0;
+_Atomic int expectedHostOps = 1024;
+_Atomic int complete = 0;
+
 static struct acctest_context *dsa, *iaa;
 static unsigned long buf_size = DSA_TEST_SIZE;
 
@@ -73,7 +77,7 @@ static int host_op(void *buffer, size_t size) {
 	size_t count;
 	size_t num_elements;
     if (buffer == NULL || size % sizeof(uint32_t) != 0) {
-        return -1; 
+        return -1;
     }
 
     ptr = (uint32_t *) buffer;
@@ -86,6 +90,10 @@ static int host_op(void *buffer, size_t size) {
         }
     }
 	// printf("Count is : %d\n", count);
+	finalHostOpCtr += 1;
+	if(finalHostOpCtr == expectedHostOps){
+		complete = 1;
+	}
     return count;
 }
 
@@ -159,8 +167,6 @@ void *wait_for_iaa(void *arg) {
 
     pthread_exit((void *)ACCTEST_STATUS_OK);
 }
-
-
 
 int main(int argc, char *argv[])
 {
@@ -244,12 +250,14 @@ int main(int argc, char *argv[])
 	pthread_join(dsa_submit_thread, (void **)&rc0);
     pthread_join(dsa_wait_thread, (void **)&rc1);
     pthread_join(iaa_wait_thread, (void **)&rc2);
+
+	while( !complete ){}
 	clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
 	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
 					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
 
-	if (rc0 != ACCTEST_STATUS_OK || rc1 != ACCTEST_STATUS_OK 
+	if (rc0 != ACCTEST_STATUS_OK || rc1 != ACCTEST_STATUS_OK
 		|| rc2 != ACCTEST_STATUS_OK)
 		goto error;
 	// Final verification and cleanup
