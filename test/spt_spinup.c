@@ -93,11 +93,6 @@ int host_op(void *buffer, size_t size) {
             count++;
         }
     }
-	// printf("Count is : %d\n", count);
-	finalHostOpCtr += 1;
-	if(finalHostOpCtr == expectedHostOps){
-		complete = 1;
-	}
     return count;
 }
 
@@ -110,15 +105,20 @@ void *dsa_submit(void *arg) {
 }
 
 int shuffle_host_op(void *buffer, size_t size){
-	for(size_t i = 0; i < size; i++){
-		((uint8_t *)buffer)[i] = i;
-	}
+	// for(size_t i = 0; i < size; i++){
+	// 	((uint8_t *)buffer)[i] = i;
+	// }
 	return 1;
 }
 
 void *host_operation_thread(void *arg) {
 		host_op_args *args = (host_op_args *) arg;
     args->count = args->host_op(args->buffer, args->size);  // Store the result in the structure
+		// printf("Count is : %d\n", count);
+		finalHostOpCtr += 1;
+		if(finalHostOpCtr == expectedHostOps){
+			complete = 1;
+		}
     return NULL;  // Return nothing as the result is stored in the passed structure
 }
 
