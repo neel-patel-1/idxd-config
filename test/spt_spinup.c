@@ -21,6 +21,7 @@
 _Atomic int finalHostOpCtr = 0;
 _Atomic int expectedHostOps = 1024;
 _Atomic int complete = 0;
+_Atomic int host_op_sel = 0;
 
 static struct acctest_context *dsa, *iaa;
 static unsigned long buf_size = DSA_TEST_SIZE;
@@ -29,6 +30,7 @@ typedef struct {
     void *buffer;
     size_t size;
     size_t count;  // Result from host_op
+		int (*host_op)(void *buffer, size_t size);
 } host_op_args;
 
 // Function prototypes
@@ -36,6 +38,8 @@ void *memcpy_and_submit(void *arg);
 void *wait_for_iaa(void *arg);
 void *dsa_submit(void *arg);
 void *host_operation_thread(void *arg);
+int shuffle_host_op(void *buffer, size_t size);
+int host_op(void *buffer, size_t size);
 
 static int setup_dsa_iaa(int num_desc) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
@@ -72,7 +76,7 @@ static int setup_dsa_iaa(int num_desc) {
 	return rc;
 }
 
-static int host_op(void *buffer, size_t size) {
+int host_op(void *buffer, size_t size) {
 	uint32_t *ptr;
 	size_t count;
 	size_t num_elements;
@@ -105,10 +109,16 @@ void *dsa_submit(void *arg) {
 	pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
-void *host_operation_thread(void *arg) {
-    host_op_args *args = (host_op_args *)arg;
-    args->count = host_op(args->buffer, args->size);  // Store the result in the structure
+int shuffle_host_op(void *buffer, size_t size){
+	for(size_t i = 0; i < size; i++){
+		((uint8_t *)buffer)[i] = i;
+	}
+	return 1;
+}
 
+void *host_operation_thread(void *arg) {
+		host_op_args *args = (host_op_args *) arg;
+    args->count = args->host_op(args->buffer, args->size);  // Store the result in the structure
     return NULL;  // Return nothing as the result is stored in the passed structure
 }
 
@@ -130,6 +140,7 @@ void *memcpy_and_submit(void *arg) {
         if (args == NULL) {
             pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
         }
+				args->host_op = shuffle_host_op;
         args->buffer = dsa_tsk_node->tsk->dst1;
         args->size = buf_size;
 
@@ -184,7 +195,8 @@ int main(int argc, char *argv[])
 	struct timespec times[2];
 	long long lat = 0;
 
-	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh")) != -1) {
+
+	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:h")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
@@ -201,6 +213,8 @@ int main(int argc, char *argv[])
 		case 'v':
 			debug_logging = 1;
 			break;
+		case 'h':
+			host_op_sel = strtoul(optarg, NULL, 0);
 		default:
 			break;
 		}
