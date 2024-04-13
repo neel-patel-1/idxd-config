@@ -78,6 +78,22 @@ static int setup_dsa_iaa(int num_desc) {
 	return rc;
 }
 
+int (*select_host_op(int host_op_sel))(void *buffer, size_t size){
+	switch(host_op_sel){
+		case 0:
+			return host_op;
+		case 1:
+			return shuffle_host_op;
+		default:
+			return host_op;
+	}
+}
+
+int shuffle_host_op(void *buffer, size_t size){
+	shuffle_elements(buffer, size);
+	return 1;
+}
+
 int host_op(void *buffer, size_t size) {
 	uint32_t *ptr;
 	size_t count;
@@ -106,10 +122,7 @@ void *dsa_submit(void *arg) {
 	pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
-int shuffle_host_op(void *buffer, size_t size){
-	shuffle_elements(buffer, size);
-	return 1;
-}
+
 
 void *host_operation_thread(void *arg) {
 		host_op_args *args = (host_op_args *) arg;
@@ -140,8 +153,9 @@ void *memcpy_and_submit(void *arg) {
         if (args == NULL) {
             pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
         }
+				int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
 				if(do_spt_spinup){
-					args->host_op = shuffle_host_op;
+					args->host_op = selected_op;
 					args->buffer = dsa_tsk_node->tsk->dst1;
 					args->size = buf_size;
 					// Create a thread to perform the host operation
@@ -150,7 +164,7 @@ void *memcpy_and_submit(void *arg) {
 							pthread_exit((void *)(intptr_t)errno);
 					}
 				} else {
-					shuffle_host_op(dsa_tsk_node->tsk->dst1, buf_size);
+					selected_op(dsa_tsk_node->tsk->dst1, buf_size);
 					// no atomic ctr update from thread -- do it here
 					finalHostOpCtr += 1;
 					if(finalHostOpCtr == expectedHostOps){
