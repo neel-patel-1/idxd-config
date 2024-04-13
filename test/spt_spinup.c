@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 	long long lat = 0;
 
 
-	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:hs")) != -1) {
+	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 		case 'h':
 			host_op_sel = strtoul(optarg, NULL, 0);
 		case 's':
-			do_spt_spinup = 1;
+			do_spt_spinup = strtoul(optarg, NULL, 0);
 		default:
 			break;
 		}
