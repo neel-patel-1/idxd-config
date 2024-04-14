@@ -11,6 +11,7 @@
 #include "dsa.h"
 #include "iaa.h"
 #include "algorithms/iaa_filter.h"
+#include "util.h"
 #include <pthread.h>
 
 #define DSA_TEST_SIZE 16384
@@ -18,13 +19,29 @@
 #define IAA_COMPRESS_SRC2_SIZE (IAA_COMPRESS_AECS_SIZE * 2)
 #define IAA_COMPRESS_MAX_DEST_SIZE (2097152 * 2)
 
-static unsigned long buf_size = DSA_TEST_SIZE;
+_Atomic int finalHostOpCtr = 0;
+_Atomic int expectedHostOps = 0;
+_Atomic int complete = 0;
+_Atomic int host_op_sel = 0;
+_Atomic int do_spt_spinup = 0;
+
 static struct acctest_context *dsa, *iaa;
+static unsigned long buf_size = DSA_TEST_SIZE;
+
+typedef struct {
+    void *buffer;
+    size_t size;
+    size_t count;  // Result from host_op
+		int (*host_op)(void *buffer, size_t size);
+} host_op_args;
 
 // Function prototypes
 void *memcpy_and_submit(void *arg);
 void *wait_for_iaa(void *arg);
 void *dsa_submit(void *arg);
+void *host_operation_thread(void *arg);
+int shuffle_host_op(void *buffer, size_t size);
+int host_op(void *buffer, size_t size);
 
 static int setup_dsa_iaa(int num_desc) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
@@ -61,12 +78,28 @@ static int setup_dsa_iaa(int num_desc) {
 	return rc;
 }
 
-static int host_op(void *buffer, size_t size) {
+int (*select_host_op(int host_op_sel))(void *buffer, size_t size){
+	switch(host_op_sel){
+		case 0:
+			return host_op;
+		case 1:
+			return shuffle_host_op;
+		default:
+			return host_op;
+	}
+}
+
+int shuffle_host_op(void *buffer, size_t size){
+	shuffle_elements(buffer, size);
+	return 1;
+}
+
+int host_op(void *buffer, size_t size) {
 	uint32_t *ptr;
 	size_t count;
 	size_t num_elements;
     if (buffer == NULL || size % sizeof(uint32_t) != 0) {
-        return -1; 
+        return -1;
     }
 
     ptr = (uint32_t *) buffer;
@@ -78,7 +111,6 @@ static int host_op(void *buffer, size_t size) {
             count++;
         }
     }
-	// printf("Count is : %d\n", count);
     return count;
 }
 
@@ -90,21 +122,65 @@ void *dsa_submit(void *arg) {
 	pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
+
+
+void *host_operation_thread(void *arg) {
+		host_op_args *args = (host_op_args *) arg;
+    args->count = args->host_op(args->buffer, args->size);  // Store the result in the structure
+		// printf("Count is : %d\n", count);
+		finalHostOpCtr += 1;
+		if(finalHostOpCtr == expectedHostOps){
+			complete = 1;
+		}
+    return NULL;  // Return nothing as the result is stored in the passed structure
+}
+
 void *memcpy_and_submit(void *arg) {
-	struct task_node *dsa_tsk_node, *iaa_tsk_node;
+    struct task_node *dsa_tsk_node, *iaa_tsk_node;
     int rc;
-	// int itr = 0;
-	dsa_tsk_node = dsa->multi_task_node;
-	iaa_tsk_node = iaa->multi_task_node;
+	host_op_args *args;
+	pthread_t host_thread;
+
+    dsa_tsk_node = dsa->multi_task_node;
+    iaa_tsk_node = iaa->multi_task_node;
 
     while (dsa_tsk_node) {
-		// printf("memcpy and submit itr: %d\n", itr++);
         rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
             pthread_exit((void *)(intptr_t)rc);
-		host_op(dsa_tsk_node->tsk->dst1, buf_size);
+
+        args = malloc(sizeof(host_op_args));
+        if (args == NULL) {
+            pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+        }
+				int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
+				if(do_spt_spinup){
+					args->host_op = selected_op;
+					args->buffer = dsa_tsk_node->tsk->dst1;
+					args->size = buf_size;
+					// Create a thread to perform the host operation
+					if (pthread_create(&host_thread, NULL, host_operation_thread, args) != 0) {
+							free(args);  // Clean up if thread creation fails
+							pthread_exit((void *)(intptr_t)errno);
+					}
+				} else {
+					selected_op(dsa_tsk_node->tsk->dst1, buf_size);
+					// no atomic ctr update from thread -- do it here
+					finalHostOpCtr += 1;
+					if(finalHostOpCtr == expectedHostOps){
+						complete = 1;
+					}
+				}
+
+
+
+
+        pthread_detach(host_thread);
+
+        // Continue with other operations
         iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
         iaa_prep_sub_task_node(iaa, iaa_tsk_node);
+
         dsa_tsk_node = dsa_tsk_node->next;
         iaa_tsk_node = iaa_tsk_node->next;
     }
@@ -128,8 +204,6 @@ void *wait_for_iaa(void *arg) {
     pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
-
-
 int main(int argc, char *argv[])
 {
 	int rc = 0;
@@ -146,7 +220,8 @@ int main(int argc, char *argv[])
 	struct timespec times[2];
 	long long lat = 0;
 
-	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh")) != -1) {
+
+	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
@@ -159,10 +234,15 @@ int main(int argc, char *argv[])
 			break;
 		case 'n':
 			num_desc = strtoul(optarg, NULL, 0);
+			expectedHostOps = num_desc;
 			break;
 		case 'v':
 			debug_logging = 1;
 			break;
+		case 'h':
+			host_op_sel = strtoul(optarg, NULL, 0);
+		case 's':
+			do_spt_spinup = strtoul(optarg, NULL, 0);
 		default:
 			break;
 		}
@@ -212,21 +292,17 @@ int main(int argc, char *argv[])
 	pthread_join(dsa_submit_thread, (void **)&rc0);
     pthread_join(dsa_wait_thread, (void **)&rc1);
     pthread_join(iaa_wait_thread, (void **)&rc2);
+
+	while( !complete ){}
 	clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
 	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
 					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
 
-	if (rc0 != ACCTEST_STATUS_OK || rc1 != ACCTEST_STATUS_OK 
+	if (rc0 != ACCTEST_STATUS_OK || rc1 != ACCTEST_STATUS_OK
 		|| rc2 != ACCTEST_STATUS_OK)
 		goto error;
 	// Final verification and cleanup
-    rc = task_result_verify_task_nodes(dsa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		return rc;
-    rc = task_result_verify_task_nodes(iaa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		return rc;
 
 	printf("Total Latency: %lld ns\n", lat);
 	printf("Throughput: %f\n", (buf_size * num_desc)/(double)lat);

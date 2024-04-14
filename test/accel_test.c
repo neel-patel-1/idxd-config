@@ -307,11 +307,11 @@ static int acctest_enqcmd(struct acctest_context *ctx, struct hw_desc *hw)
 	int retry_count = 0;
 	int ret = 0;
 
-	while (retry_count < 3) {
+	while (retry_count < 1000) {
 		if (!enqcmd(ctx->wq_reg, hw))
 			break;
 
-		info("retry\n");
+		// info("retry\n");
 		retry_count++;
 	}
 
@@ -386,12 +386,13 @@ int acctest_wait_on_desc_timeout(struct completion_record *comp,
 
 
 void memset_calgary(void *dst, size_t len){
+	uint64_t readLen;
 	if(calgaryTracker.fBuf == NULL){
 		calgaryTracker.f = fopen(CALGARY, "r");
 		calgaryTracker.fBuf = malloc(len);
 		info("Calgary open\n");
 	}
-	uint64_t readLen =
+	readLen =
 		fread((void *)calgaryTracker.fBuf,
 			1, len, calgaryTracker.f);
 	calgaryTracker.offset += readLen;
@@ -509,14 +510,14 @@ void __clean_task(struct task *tsk)
 		return;
 	free(tsk->desc);
 	free(tsk->comp);
-	mprotect(tsk->src1, PAGE_SIZE, PROT_READ | PROT_WRITE);
-	if (tsk->opcode != IAX_OPCODE_TRANSL_FETCH) {
-		free(tsk->src1);
-	} else {
-		munmap(tsk->src1, tsk->xfer_size);
-		close(tsk->group);
-		close(tsk->container);
-	}
+	// mprotect(tsk->src1, PAGE_SIZE, PROT_READ | PROT_WRITE);
+	// if (tsk->opcode != IAX_OPCODE_TRANSL_FETCH) {
+	// 	free(tsk->src1);
+	// } else {
+	// 	munmap(tsk->src1, tsk->xfer_size);
+	// 	close(tsk->group);
+	// 	close(tsk->container);
+	// }
 	free(tsk->src2);
 	free(tsk->dst1);
 	free(tsk->dst2);

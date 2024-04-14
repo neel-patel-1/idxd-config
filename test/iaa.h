@@ -7,16 +7,7 @@
 #include "accel_test.h"
 #include "accfg_test.h"
 
-int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain);
-
-struct iaa_latencies {
-    uint64_t total_alloc_time[2];
-    uint64_t total_prep_time[2];
-    uint64_t total_sub_time[2];
-    uint64_t total_wait_time[2];
-};
-
-extern struct iaa_latencies lat;
+int iaa_init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size);
 
 
 
@@ -43,6 +34,8 @@ int iaa_transl_fetch_multi_task_nodes(struct acctest_context *ctx, int do_mmap);
 int iaa_encrypto_multi_task_nodes(struct acctest_context *ctx);
 int iaa_decrypto_multi_task_nodes(struct acctest_context *ctx);
 
+int iaa_wait_compress(struct acctest_context *ctx, struct task *tsk);
+
 void iaa_prep_noop(struct task *tsk);
 void iaa_prep_crc64(struct task *tsk);
 void iaa_prep_zcompress8(struct task *tsk);
@@ -64,6 +57,8 @@ void iaa_prep_expand(struct task *tsk);
 void iaa_prep_transl_fetch(struct task *tsk);
 void iaa_prep_encrypto(struct task *tsk);
 void iaa_prep_decrypto(struct task *tsk);
+
+int iaa_prep_sub_task_node(struct acctest_context *ctx, struct task_node *tsk_node);
 
 int iaa_task_result_verify(struct task *tsk, int mismatch_expected);
 int iaa_task_result_verify_task_nodes(struct acctest_context *ctx, int mismatch_expected);
