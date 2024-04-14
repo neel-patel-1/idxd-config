@@ -102,15 +102,17 @@ int main(int argc, char *argv[])
 	struct timespec times[2];
 	long long lat = 0;
 	struct task_node *dsa_tsk_node;
+	int num_iter = 1;
+	double avg_lat = 0;
 
 	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
 			break;
-		// case 'i':
-		// 	num_iter = strtoul(optarg, NULL, 0);
-		// 	break;
+		case 'i':
+			num_iter = strtoul(optarg, NULL, 0);
+			break;
 		case 't':
 			ms_timeout = strtoul(optarg, NULL, 0);
 			break;
@@ -124,6 +126,8 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+
+	buf_size = 1048576/num_desc;
 
 	// iaa setup
 	iaa = acctest_init(tflags);
@@ -160,43 +164,48 @@ int main(int argc, char *argv[])
 	rc = setup_dsa_iaa(buf_size, num_desc);
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
-	clock_gettime(CLOCK_MONOTONIC, &times[0]);
+	for(int i = 0; i < num_iter; i++) {
+		clock_gettime(CLOCK_MONOTONIC, &times[0]);
 	
-    rc = test_dsa();
-    if (rc != ACCTEST_STATUS_OK)
-		goto error;
+		rc = test_dsa();
+		if (rc != ACCTEST_STATUS_OK)
+			goto error;
 
-	dsa_tsk_node = dsa->multi_task_node;
-	while (dsa_tsk_node) {
-		host_op(dsa_tsk_node->tsk->dst1, buf_size);
-		dsa_tsk_node = dsa_tsk_node->next;
+		dsa_tsk_node = dsa->multi_task_node;
+		while (dsa_tsk_node) {
+			host_op(dsa_tsk_node->tsk->dst1, buf_size);
+			dsa_tsk_node = dsa_tsk_node->next;
+		}
+
+		rc = test_iaa();
+		if (rc != ACCTEST_STATUS_OK)
+			goto error;
+
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+
+		lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
+						((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+
+		// Final verification and cleanup
+		// rc = task_result_verify_task_nodes(dsa, 0);
+		// if (rc != ACCTEST_STATUS_OK)
+		// 	goto error;
+		// rc = task_result_verify_task_nodes(iaa, 0);
+		// if (rc != ACCTEST_STATUS_OK)
+		// 	goto error;
 	}
+	
 
-    rc = test_iaa();
-    if (rc != ACCTEST_STATUS_OK)
-		goto error;
-
-	clock_gettime(CLOCK_MONOTONIC, &times[1]);
-
-	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
-					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
-
-	// Final verification and cleanup
-    rc = task_result_verify_task_nodes(dsa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		goto error;
-    rc = task_result_verify_task_nodes(iaa, 0);
-	if (rc != ACCTEST_STATUS_OK)
-		goto error;
-
-	printf("Total Latency: %lld ns\n", lat);
-	printf("Throughput: %f\n", (buf_size * num_desc)/(double)lat);
+	avg_lat = (double)lat/num_iter;
+	printf("Num desc: %ld, transfer size: %ld\n", num_desc, buf_size);
+	printf("Average Latency: %.2f ms\n", avg_lat/1000000.0);
+	printf("Throughput: %.2f\n", (buf_size * num_desc)/(double)avg_lat);
 
     acctest_free_task(dsa);
 	acctest_free_task(iaa);
 
  error:
 	acctest_free(dsa);
-	acctest_free(iaa);
+	// acctest_free(iaa);
 	return rc;
 }

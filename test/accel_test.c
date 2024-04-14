@@ -307,12 +307,12 @@ static int acctest_enqcmd(struct acctest_context *ctx, struct hw_desc *hw)
 	int retry_count = 0;
 	int ret = 0;
 
-	while (retry_count < 1000) {
+	while (1) {
 		if (!enqcmd(ctx->wq_reg, hw))
 			break;
 
 		// info("retry\n");
-		retry_count++;
+		// retry_count++;
 	}
 
 	return ret;
@@ -385,28 +385,40 @@ int acctest_wait_on_desc_timeout(struct completion_record *comp,
 }
 
 
-void memset_calgary(void *dst, size_t len){
-	uint64_t readLen;
-	if(calgaryTracker.fBuf == NULL){
-		calgaryTracker.f = fopen(CALGARY, "r");
-		calgaryTracker.fBuf = malloc(len);
-		info("Calgary open\n");
-	}
-	readLen =
-		fread((void *)calgaryTracker.fBuf,
-			1, len, calgaryTracker.f);
-	calgaryTracker.offset += readLen;
-	if (readLen < len){
-		info("Calgary rewind\n");
-		rewind(calgaryTracker.f);
-		calgaryTracker.offset = 0;
-		readLen =
-			fread((void *)calgaryTracker.fBuf,
-				1, len, calgaryTracker.f);
-	}
-	memcpy(dst, calgaryTracker.fBuf, len);
+void memset_calgary(void *dst, size_t len) {
+    uint64_t readLen, totalRead = 0;
 
+    if (calgaryTracker.f == NULL) {
+        calgaryTracker.f = fopen(CALGARY, "rb"); 
+        if (calgaryTracker.f == NULL) {
+            perror("Failed to open Calgary Corpus file");
+            exit(EXIT_FAILURE); 
+        }
+        calgaryTracker.offset = 0; 
+    }
 
+    if (calgaryTracker.fBuf == NULL) {
+        calgaryTracker.fBuf = malloc(len);
+        if (calgaryTracker.fBuf == NULL) {
+            perror("Failed to allocate memory for buffer");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    fseek(calgaryTracker.f, calgaryTracker.offset, SEEK_SET);
+    readLen = fread(calgaryTracker.fBuf, 1, len, calgaryTracker.f);
+    totalRead += readLen;
+
+    if (readLen < len) {
+        info("Calgary rewind\n");
+        rewind(calgaryTracker.f);  
+        readLen = fread((uint8_t *)calgaryTracker.fBuf + totalRead, 1, len - totalRead, calgaryTracker.f);
+        totalRead += readLen;
+        calgaryTracker.offset = readLen; 
+    } else {
+        calgaryTracker.offset += readLen;
+    }
+    memcpy(dst, calgaryTracker.fBuf, len);
 }
 
 /* the pattern is 8 bytes long while the dst can with any length */
@@ -510,14 +522,14 @@ void __clean_task(struct task *tsk)
 		return;
 	free(tsk->desc);
 	free(tsk->comp);
-	// mprotect(tsk->src1, PAGE_SIZE, PROT_READ | PROT_WRITE);
-	// if (tsk->opcode != IAX_OPCODE_TRANSL_FETCH) {
-	// 	free(tsk->src1);
-	// } else {
-	// 	munmap(tsk->src1, tsk->xfer_size);
-	// 	close(tsk->group);
-	// 	close(tsk->container);
-	// }
+	mprotect(tsk->src1, PAGE_SIZE, PROT_READ | PROT_WRITE);
+	if (tsk->opcode != IAX_OPCODE_TRANSL_FETCH) {
+		free(tsk->src1);
+	} else {
+		munmap(tsk->src1, tsk->xfer_size);
+		close(tsk->group);
+		close(tsk->container);
+	}
 	free(tsk->src2);
 	free(tsk->dst1);
 	free(tsk->dst2);

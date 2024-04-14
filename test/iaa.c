@@ -234,10 +234,10 @@ static int init_compress(struct task *tsk, int tflags, int opcode, unsigned long
 	tsk->test_flags = tflags;
 	tsk->xfer_size = src1_xfer_size;
 
-	// tsk->src1 = aligned_alloc(32, src1_xfer_size);
-	// if (!tsk->src1)
-	// 	return -ENOMEM;
-	// memset_pattern(tsk->src1, tsk->pattern, src1_xfer_size);
+	tsk->src1 = aligned_alloc(32, src1_xfer_size);
+	if (!tsk->src1)
+		return -ENOMEM;
+	memset_pattern(tsk->src1, tsk->pattern, src1_xfer_size);
 
 	tsk->src2 = aligned_alloc(32, IAA_COMPRESS_SRC2_SIZE);
 	if (!tsk->src2)
@@ -1339,13 +1339,13 @@ int iaa_compress_multi_task_nodes(struct acctest_context *ctx)
 		tsk_node = tsk_node->next;
 	}
 
-	info("Submitted all compress jobs\n");
+	info("Submitting all compress jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
 		tsk_node = tsk_node->next;
 	}
-
+	info("All jobs submitted successfully\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
 		ret = iaa_wait_compress(ctx, tsk_node->tsk);

@@ -1,0 +1,2816 @@
+[ info] alloc wq 1 shared size 128 addr 0x7c339dc1f000 batch sz 0xfffffffe xfer sz 0x80000000
+[ info] alloc wq 0 shared size 128 addr 0x7c339dbe5000 batch sz 0x400 xfer sz 0x80000000
+[ info] testmemory: opcode 3 len 0x400 tflags 0x1 num_desc 1024
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] preparing descriptor for memcpy
+[ info] Submitted all memcpy jobs
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compress job
+[ info] preparing descriptor for compress
+[ info] Submitted compre

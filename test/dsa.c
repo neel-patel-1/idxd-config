@@ -63,7 +63,7 @@ int init_memcpy(struct task *tsk, int tflags, int opcode, unsigned long xfer_siz
 	tsk->src1 = aligned_alloc(force_align, xfer_size);
 	if (!tsk->src1)
 		return -ENOMEM;
-	memset_pattern(tsk->src1, tsk->pattern, xfer_size);
+	memset_calgary(tsk->src1, xfer_size);
 
 	tsk->dst1 = aligned_alloc(force_align, xfer_size);
 	if (!tsk->dst1)
@@ -812,14 +812,12 @@ int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 		if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
 			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
-		// printf("Work sub time: %lu\n", submit_time);
 		tsk_node = tsk_node->next;
 	}
 
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
 		ret = dsa_wait_memcpy(ctx, tsk_node->tsk);
-		// printf("Work wait time: %lu\n", wait_time);
 		if (ret != ACCTEST_STATUS_OK)
 			info("Desc: %p failed with ret: %d\n",
 			     tsk_node->tsk->desc, tsk_node->tsk->comp->status);
