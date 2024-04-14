@@ -249,6 +249,11 @@ void *memcpy_and_submit(void *arg) {
 	pthread_mutex_init(&ring->lock, NULL);
 
 	pthread_create(&cbTd, NULL, app_worker_thread, kArgs);
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(5, &cpuset);
+	pthread_setaffinity_np(cbTd, sizeof(cpu_set_t), &cpuset);
+
 	dsa_tsk_node = dsa->multi_task_node;
 	iaa_tsk_node = iaa->multi_task_node;
 
@@ -385,8 +390,18 @@ int main(int argc, char *argv[])
 		goto error;
 	clock_gettime(CLOCK_MONOTONIC, &times[0]);
 	pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(1, &cpuset);
+	pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
 	pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
-    pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
+	CPU_ZERO(&cpuset);
+	CPU_SET(2, &cpuset);
+	pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
+	pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
+	CPU_ZERO(&cpuset);
+	CPU_SET(3, &cpuset);
+	pthread_setaffinity_np(iaa_wait_thread, sizeof(cpu_set_t), &cpuset);
 
 	    // Wait for threads to finish
 	pthread_join(dsa_submit_thread, (void **)&rc0);
