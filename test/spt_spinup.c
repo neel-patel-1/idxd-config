@@ -12,6 +12,7 @@
 #include "iaa.h"
 #include "algorithms/iaa_filter.h"
 #include "util.h"
+#include <math.h>
 #include <pthread.h>
 #include <pth.h>
 
@@ -42,6 +43,7 @@ void *wait_for_iaa(void *arg);
 void *dsa_submit(void *arg);
 void *host_operation_thread(void *arg);
 int shuffle_host_op(void *buffer, size_t size);
+int stencil(void *buffer, size_t size);
 int host_op(void *buffer, size_t size);
 
 static int setup_dsa_iaa(int num_desc) {
@@ -85,11 +87,45 @@ int (*select_host_op(int host_op_sel))(void *buffer, size_t size){
 			return host_op;
 		case 1:
 			return shuffle_host_op;
+		case 2:
+			return stencil;
 		default:
 			return host_op;
 	}
 }
+int stencil(void *buffer, size_t size){
+	int filter[3][3] = {
+			{-1, -1, -1},
+			{-1, 8, -1},
+			{-1, -1, -1}
+	};
 
+	double squareRoot = sqrt(size);
+	int height = (int)squareRoot;
+	int width = (int)squareRoot;
+	int output[height][width];
+	int *ptr = (int *)buffer;
+	int inpBuf[height][width];
+	int count = 0;
+	for (int i = 0; i < height; i++) {
+				for (int j = 0; j < width; j++) {
+						inpBuf[i][j] = ptr[i * width + j];
+				}
+		}
+
+	for (int y = 1; y < height - 1; y++) {
+        for (int x = 1; x < width - 1; x++) {
+            int sum = 0;
+            for (int fy = -1; fy <= 1; fy++) {
+                for (int fx = -1; fx <= 1; fx++) {
+                    sum += inpBuf[y + fy][x + fx] * filter[fy + 1][fx + 1];
+                }
+            }
+            output[y][x] = sum;
+        }
+    }
+	return count;
+}
 int shuffle_host_op(void *buffer, size_t size){
 	shuffle_elements(buffer, size);
 	return 1;
