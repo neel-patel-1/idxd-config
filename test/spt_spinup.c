@@ -126,7 +126,6 @@ void *dsa_submit(void *arg) {
 
 
 void *host_operation_thread(void *arg) {
-		printf("Host operation thread\n");
 		host_op_args *args = (host_op_args *) arg;
     args->count = args->host_op(args->buffer, args->size);  // Store the result in the structure
 		// printf("Count is : %d\n", count);
@@ -137,7 +136,64 @@ void *host_operation_thread(void *arg) {
     return NULL;  // Return nothing as the result is stored in the passed structure
 }
 
+#define RING_SIZE 1024
+
+
+#define RING_SIZE 1024
+
+typedef struct {
+    void *ops[RING_SIZE];
+    int head;
+    int tail;
+    pthread_mutex_t lock;
+} opRing;
+
+typedef struct {
+    opRing *ring;
+} kWorkerArgs;
+
+void enqueue(opRing *ring, void *op) {
+    pthread_mutex_lock(&ring->lock);
+    if ((ring->head + 1) % RING_SIZE != ring->tail) {
+        ring->ops[ring->head] = op;
+        ring->head = (ring->head + 1) % RING_SIZE;
+    }
+    pthread_mutex_unlock(&ring->lock);
+}
+
+void *dequeue(opRing *ring) {
+    pthread_mutex_lock(&ring->lock);
+    void *op = NULL;
+    if (ring->head != ring->tail) {
+        op = ring->ops[ring->tail];
+        ring->tail = (ring->tail + 1) % RING_SIZE;
+    }
+    pthread_mutex_unlock(&ring->lock);
+    return op;
+}
+
 void *app_worker_thread(void *arg){
+	pth_t pth;
+	pth_attr_t attr;
+	pth_init();
+	attr = pth_attr_new();
+	pth_attr_set(attr, PTH_ATTR_NAME, "host_op_thread");
+	pth_attr_set(attr, PTH_ATTR_STACK_SIZE, 64*1024);
+	pth_attr_set(attr, PTH_ATTR_JOINABLE, TRUE);
+	info("App worker thread created\n");
+
+	kWorkerArgs *args = (kWorkerArgs *)arg;
+	while (1) {
+			host_op_args *arg = (host_op_args *)dequeue(args->ring);
+			if (arg != NULL) {
+				if (pth_spawn(attr, host_operation_thread, arg) == NULL) {
+					printf("Error creating host op thread\n");
+					exit(-1);
+				}
+				pth_join(pth, NULL);
+			}
+	}
+	return NULL;
 
 }
 
@@ -146,16 +202,19 @@ void *memcpy_and_submit(void *arg) {
     int rc;
 	host_op_args *args;
 	pthread_t host_thread;
-	pth_t pth;
-	pth_attr_t attr;
-	pth_init();
-	attr = pth_attr_new();
-	pth_attr_set(attr, PTH_ATTR_NAME, "host_op_thread");
-	pth_attr_set(attr, PTH_ATTR_STACK_SIZE, 64*1024);
-	pth_attr_set(attr, PTH_ATTR_JOINABLE, TRUE);
 
-    dsa_tsk_node = dsa->multi_task_node;
-    iaa_tsk_node = iaa->multi_task_node;
+	pthread_t cbTd;
+
+	opRing *ring = malloc(sizeof(opRing));
+	memset(ring, 0, sizeof(opRing));
+	kWorkerArgs *kArgs = malloc(sizeof(kWorkerArgs));
+	memset(kArgs, 0, sizeof(kWorkerArgs));
+	kArgs->ring = ring;
+	pthread_mutex_init(&ring->lock, NULL);
+
+	pthread_create(&cbTd, NULL, app_worker_thread, kArgs);
+	dsa_tsk_node = dsa->multi_task_node;
+	iaa_tsk_node = iaa->multi_task_node;
 
 	while (dsa_tsk_node) {
 			rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
@@ -168,17 +227,11 @@ void *memcpy_and_submit(void *arg) {
 			}
 			int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
 			if(do_spt_spinup){
-				pth_t pth;
 				args->host_op = selected_op;
 				args->buffer = dsa_tsk_node->tsk->dst1;
 				args->size = buf_size;
-				// Create a thread to perform the host operation
-				if (pth_spawn(attr, host_operation_thread, args) == NULL) {
-						printf("Error creating host op thread\n");
-						free(args);  // Clean up if thread creation fails
-						exit(-1);
-				}
-				pth_join(pth, NULL);
+				enqueue(ring, args);
+
 			} else {
 				selected_op(dsa_tsk_node->tsk->dst1, buf_size);
 				// no atomic ctr update from thread -- do it here
