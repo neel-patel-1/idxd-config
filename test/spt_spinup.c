@@ -13,6 +13,7 @@
 #include "algorithms/iaa_filter.h"
 #include "util.h"
 #include <pthread.h>
+#include <pth.h>
 
 #define DSA_TEST_SIZE 16384
 #define IAA_COMPRESS_AECS_SIZE (1568)
@@ -125,6 +126,7 @@ void *dsa_submit(void *arg) {
 
 
 void *host_operation_thread(void *arg) {
+		printf("Host operation thread\n");
 		host_op_args *args = (host_op_args *) arg;
     args->count = args->host_op(args->buffer, args->size);  // Store the result in the structure
 		// printf("Count is : %d\n", count);
@@ -140,6 +142,13 @@ void *memcpy_and_submit(void *arg) {
     int rc;
 	host_op_args *args;
 	pthread_t host_thread;
+	pth_t pth;
+	pth_attr_t attr;
+	pth_init();
+	attr = pth_attr_new();
+	pth_attr_set(attr, PTH_ATTR_NAME, "host_op_thread");
+	pth_attr_set(attr, PTH_ATTR_STACK_SIZE, 64*1024);
+	pth_attr_set(attr, PTH_ATTR_JOINABLE, false);
 
     dsa_tsk_node = dsa->multi_task_node;
     iaa_tsk_node = iaa->multi_task_node;
@@ -155,13 +164,16 @@ void *memcpy_and_submit(void *arg) {
         }
 				int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
 				if(do_spt_spinup){
+					pth_t pth;
 					args->host_op = selected_op;
 					args->buffer = dsa_tsk_node->tsk->dst1;
 					args->size = buf_size;
 					// Create a thread to perform the host operation
-					if (pthread_create(&host_thread, NULL, host_operation_thread, args) != 0) {
+					printf("Spawning host op thread\n");
+					if (pth_spawn(attr, host_operation_thread, args) == NULL) {
+							printf("Error creating host op thread\n");
 							free(args);  // Clean up if thread creation fails
-							pthread_exit((void *)(intptr_t)errno);
+							exit(-1);
 					}
 				} else {
 					selected_op(dsa_tsk_node->tsk->dst1, buf_size);

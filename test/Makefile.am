@@ -38,7 +38,7 @@ testcore =\
 iaa_test_LDFLAGS = -lz -lcrypto
 dsa_test_LDFLAGS = -lz -lcrypto
 async_serial_LDFLAGS = -lz -lcrypto
-spt_spinup_LDFLAGS = -lz -lcrypto
+spt_spinup_LDFLAGS = -lz -lcrypto -lpth
 
 libaccfg_SOURCES = libaccfg.c $(testcore)
 libaccfg_LDADD = $(LIBACCFG_LIB) $(UUID_LIBS)
