@@ -137,6 +137,10 @@ void *host_operation_thread(void *arg) {
     return NULL;  // Return nothing as the result is stored in the passed structure
 }
 
+void *app_worker_thread(void *arg){
+
+}
+
 void *memcpy_and_submit(void *arg) {
     struct task_node *dsa_tsk_node, *iaa_tsk_node;
     int rc;
@@ -148,46 +152,41 @@ void *memcpy_and_submit(void *arg) {
 	attr = pth_attr_new();
 	pth_attr_set(attr, PTH_ATTR_NAME, "host_op_thread");
 	pth_attr_set(attr, PTH_ATTR_STACK_SIZE, 64*1024);
-	pth_attr_set(attr, PTH_ATTR_JOINABLE, false);
+	pth_attr_set(attr, PTH_ATTR_JOINABLE, TRUE);
 
     dsa_tsk_node = dsa->multi_task_node;
     iaa_tsk_node = iaa->multi_task_node;
 
-    while (dsa_tsk_node) {
-        rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
-        if (rc != ACCTEST_STATUS_OK)
-            pthread_exit((void *)(intptr_t)rc);
+	while (dsa_tsk_node) {
+			rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
+			if (rc != ACCTEST_STATUS_OK)
+					pthread_exit((void *)(intptr_t)rc);
 
-        args = malloc(sizeof(host_op_args));
-        if (args == NULL) {
-            pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
-        }
-				int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
-				if(do_spt_spinup){
-					pth_t pth;
-					args->host_op = selected_op;
-					args->buffer = dsa_tsk_node->tsk->dst1;
-					args->size = buf_size;
-					// Create a thread to perform the host operation
-					printf("Spawning host op thread\n");
-					if (pth_spawn(attr, host_operation_thread, args) == NULL) {
-							printf("Error creating host op thread\n");
-							free(args);  // Clean up if thread creation fails
-							exit(-1);
-					}
-				} else {
-					selected_op(dsa_tsk_node->tsk->dst1, buf_size);
-					// no atomic ctr update from thread -- do it here
-					finalHostOpCtr += 1;
-					if(finalHostOpCtr == expectedHostOps){
-						complete = 1;
-					}
+			args = malloc(sizeof(host_op_args));
+			if (args == NULL) {
+					pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+			}
+			int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
+			if(do_spt_spinup){
+				pth_t pth;
+				args->host_op = selected_op;
+				args->buffer = dsa_tsk_node->tsk->dst1;
+				args->size = buf_size;
+				// Create a thread to perform the host operation
+				if (pth_spawn(attr, host_operation_thread, args) == NULL) {
+						printf("Error creating host op thread\n");
+						free(args);  // Clean up if thread creation fails
+						exit(-1);
 				}
-
-
-
-
-        pthread_detach(host_thread);
+				pth_join(pth, NULL);
+			} else {
+				selected_op(dsa_tsk_node->tsk->dst1, buf_size);
+				// no atomic ctr update from thread -- do it here
+				finalHostOpCtr += 1;
+				if(finalHostOpCtr == expectedHostOps){
+					complete = 1;
+				}
+			}
 
         // Continue with other operations
         iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
