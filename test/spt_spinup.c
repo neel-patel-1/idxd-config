@@ -315,6 +315,68 @@ void *wait_for_iaa(void *arg) {
     pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
+void submit_poll_hostop_submit_poll(void *arg){
+	struct task_node *dsa_tsk_node, *iaa_tsk_node;
+	/* submit */
+	int rc = 0;
+	clock_gettime(CLOCK_MONOTONIC, &times[0]);
+	rc = dsa_memcpy_submit_task_nodes(dsa);
+	if (rc != ACCTEST_STATUS_OK)
+		pthread_exit((void *)(intptr_t)rc);
+
+	/* memcpy and submit */
+	host_op_args *args;
+	dsa_tsk_node = dsa->multi_task_node;
+	iaa_tsk_node = iaa->multi_task_node;
+
+	while (dsa_tsk_node) {
+			rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
+			if (rc != ACCTEST_STATUS_OK)
+					pthread_exit((void *)(intptr_t)rc);
+
+			args = malloc(sizeof(host_op_args));
+			if (args == NULL) {
+					pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+			}
+			int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
+			// if(do_spt_spinup){
+			// 	args->host_op = selected_op;
+			// 	args->buffer = dsa_tsk_node->tsk->dst1;
+			// 	args->size = buf_size;
+			// 	enqueue(ring, args);
+
+			// } else {
+				selected_op(dsa_tsk_node->tsk->dst1, buf_size);
+				// no atomic ctr update from thread -- do it here
+				finalHostOpCtr += 1;
+				if(finalHostOpCtr == expectedHostOps){
+					complete = 1;
+				}
+			// }
+
+        // Continue with other operations
+        iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
+        iaa_prep_sub_task_node(iaa, iaa_tsk_node);
+
+        dsa_tsk_node = dsa_tsk_node->next;
+        iaa_tsk_node = iaa_tsk_node->next;
+    }
+
+		iaa_tsk_node = iaa->multi_task_node;
+		while(iaa_tsk_node) {
+		// printf("Wait for IAA itr: %d\n", itr++);
+        rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
+        if (rc != ACCTEST_STATUS_OK)
+            pthread_exit((void *)(intptr_t)rc);
+        iaa_tsk_node = iaa_tsk_node->next;
+    }
+		while( !complete ){}
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+    pthread_exit((void *)ACCTEST_STATUS_OK);
+
+}
+
+
 int main(int argc, char *argv[])
 {
 	int rc = 0;
