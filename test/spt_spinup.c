@@ -389,6 +389,7 @@ int main(int argc, char *argv[])
 	// unsigned int num_iter = 1;
 	pthread_t dsa_wait_thread, iaa_wait_thread;
 	pthread_t dsa_submit_thread;
+	int dedicated_pollers = 0;
 	int rc0, rc1, rc2;
 	long long lat = 0;
 
@@ -456,30 +457,34 @@ int main(int argc, char *argv[])
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
 
-	cpu_set_t cpuset;
-	pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
-	CPU_ZERO(&cpuset);
-	CPU_SET(2, &cpuset);
-	pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
+	if(dedicated_pollers){
+		cpu_set_t cpuset;
+		pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
+		CPU_ZERO(&cpuset);
+		CPU_SET(2, &cpuset);
+		pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
 
-	pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
-	CPU_ZERO(&cpuset);
-	CPU_SET(3, &cpuset);
-	pthread_setaffinity_np(iaa_wait_thread, sizeof(cpu_set_t), &cpuset);
+		pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
+		CPU_ZERO(&cpuset);
+		CPU_SET(3, &cpuset);
+		pthread_setaffinity_np(iaa_wait_thread, sizeof(cpu_set_t), &cpuset);
 
-	pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
-	CPU_ZERO(&cpuset);
-	CPU_SET(1, &cpuset);
-	pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
+		pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
+		CPU_ZERO(&cpuset);
+		CPU_SET(1, &cpuset);
+		pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
 
 
 	    // Wait for threads to finish
-	pthread_join(dsa_submit_thread, (void **)&rc0);
+		pthread_join(dsa_submit_thread, (void **)&rc0);
     pthread_join(dsa_wait_thread, (void **)&rc1);
     pthread_join(iaa_wait_thread, (void **)&rc2);
+	} else {
+		pthread_t submit_poll_hostop_submit_poll_thread;
+		pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
+		pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
+	}
 
-
-	clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
 	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
 					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
