@@ -170,7 +170,6 @@ void *host_operation_thread(void *arg) {
 		host_op_args *args = (host_op_args *) arg;
     args->count = args->host_op(args->buffer, args->size);  // Store the result in the structure
 		finalHostOpCtr += 1;
-		printf("Count is : %d\n", finalHostOpCtr);
 		if(finalHostOpCtr == expectedHostOps){
 			complete = 1;
 		}
