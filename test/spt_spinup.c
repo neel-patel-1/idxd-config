@@ -27,6 +27,8 @@ _Atomic int complete = 0;
 _Atomic int host_op_sel = 0;
 _Atomic int do_spt_spinup = 0;
 
+
+static struct timespec times[2];
 static struct acctest_context *dsa, *iaa;
 static unsigned long buf_size = DSA_TEST_SIZE;
 
@@ -155,6 +157,7 @@ int host_op(void *buffer, size_t size) {
 
 void *dsa_submit(void *arg) {
 	int rc = 0;
+	clock_gettime(CLOCK_MONOTONIC, &times[0]);
 	rc = dsa_memcpy_submit_task_nodes(dsa);
 	if (rc != ACCTEST_STATUS_OK)
 		pthread_exit((void *)(intptr_t)rc);
@@ -307,7 +310,8 @@ void *wait_for_iaa(void *arg) {
             pthread_exit((void *)(intptr_t)rc);
         iaa_tsk_node = iaa_tsk_node->next;
     }
-
+		while( !complete ){}
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
     pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
@@ -324,7 +328,6 @@ int main(int argc, char *argv[])
 	pthread_t dsa_wait_thread, iaa_wait_thread;
 	pthread_t dsa_submit_thread;
 	int rc0, rc1, rc2;
-	struct timespec times[2];
 	long long lat = 0;
 
 
@@ -390,27 +393,30 @@ int main(int argc, char *argv[])
 	rc = setup_dsa_iaa(num_desc);
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
-	clock_gettime(CLOCK_MONOTONIC, &times[0]);
-	pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
+
 	cpu_set_t cpuset;
-	CPU_ZERO(&cpuset);
-	CPU_SET(1, &cpuset);
-	pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
 	pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
 	CPU_ZERO(&cpuset);
 	CPU_SET(2, &cpuset);
 	pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
+
 	pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
 	CPU_ZERO(&cpuset);
 	CPU_SET(3, &cpuset);
 	pthread_setaffinity_np(iaa_wait_thread, sizeof(cpu_set_t), &cpuset);
+
+	pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
+	CPU_ZERO(&cpuset);
+	CPU_SET(1, &cpuset);
+	pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
+
 
 	    // Wait for threads to finish
 	pthread_join(dsa_submit_thread, (void **)&rc0);
     pthread_join(dsa_wait_thread, (void **)&rc1);
     pthread_join(iaa_wait_thread, (void **)&rc2);
 
-	while( !complete ){}
+
 	clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
 	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
