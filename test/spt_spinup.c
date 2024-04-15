@@ -26,6 +26,7 @@ _Atomic int expectedHostOps = 0;
 _Atomic int complete = 0;
 _Atomic int host_op_sel = 0;
 _Atomic int do_spt_spinup = 0;
+_Atomic int num_iter = 1;
 
 
 static struct timespec times[2];
@@ -318,16 +319,21 @@ void submit_poll_hostop_submit_poll(void *arg){
 	/* submit */
 	int rc = 0;
 	clock_gettime(CLOCK_MONOTONIC, &times[0]);
-	rc = dsa_memcpy_submit_task_nodes(dsa);
-	if (rc != ACCTEST_STATUS_OK)
-		pthread_exit((void *)(intptr_t)rc);
+	int num_iter = 100;
+	for(int i= 0; i<num_iter; i++){
+		complete = false; /* reset shared synchronization variables */
+		finalHostOpCtr = 0;
 
-	/* memcpy and submit */
-	host_op_args *args;
-	dsa_tsk_node = dsa->multi_task_node;
-	iaa_tsk_node = iaa->multi_task_node;
+		rc = dsa_memcpy_submit_task_nodes(dsa);
+		if (rc != ACCTEST_STATUS_OK)
+			pthread_exit((void *)(intptr_t)rc);
 
-	while (dsa_tsk_node) {
+		/* memcpy and submit */
+		host_op_args *args;
+		dsa_tsk_node = dsa->multi_task_node;
+		iaa_tsk_node = iaa->multi_task_node;
+
+		while (dsa_tsk_node) {
 			rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
 			if (rc != ACCTEST_STATUS_OK)
 					pthread_exit((void *)(intptr_t)rc);
@@ -369,6 +375,7 @@ void submit_poll_hostop_submit_poll(void *arg){
         iaa_tsk_node = iaa_tsk_node->next;
     }
 		while( !complete ){}
+	}
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
     pthread_exit((void *)ACCTEST_STATUS_OK);
 
@@ -465,15 +472,14 @@ int main(int argc, char *argv[])
 	int nKWorkers;
 	long long lat = 0;
 
-
 	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:k:")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
 			break;
-		// case 'i':
-		// 	num_iter = strtoul(optarg, NULL, 0);
-		// 	break;
+		case 'i':
+			num_iter = strtoul(optarg, NULL, 0);
+			break;
 		case 'n':
 			num_desc = strtoul(optarg, NULL, 0);
 			expectedHostOps = num_desc;
@@ -534,6 +540,8 @@ int main(int argc, char *argv[])
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
 
+	accfg_set_log_priority(dsa->ctx, 10);
+	accfg_set_log_priority(iaa->ctx, 10);
 	cpu_set_t cpuset;
 	switch (test_config){ /* dedicated full batch submit, dedicated poll + host op + submit ...*/
 		case 0:
@@ -560,21 +568,25 @@ int main(int argc, char *argv[])
 			break;
 		case 1: /* single serial submit, poll, host op, submit ...*/
 			pthread_t submit_poll_hostop_submit_poll_thread;
-			pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
-			pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
-			pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
 			CPU_ZERO(&cpuset);
 			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
+
+			pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
+			pthread_setaffinity_np(submit_poll_hostop_submit_poll_thread, sizeof(cpu_set_t), &cpuset);
+			pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
+
 			break;
 		case 2: /* single serial submit, poll, parallelized host op, submit ...*/
 			parallelTdOps *pTdOps = malloc(sizeof(parallelTdOps));
 			pTdOps->nKWorkers = nKWorkers;
 			pthread_t single_core_parallelized_host_ops;
+			CPU_ZERO(&cpuset);
+			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
+
 			pthread_create(&single_core_parallelized_host_ops, NULL, parallel_host_ops, (void *)pTdOps);
 			pthread_setaffinity_np(single_core_parallelized_host_ops, sizeof(cpu_set_t), &cpuset);
 			pthread_join(single_core_parallelized_host_ops, (void **)&rc0);
-			CPU_ZERO(&cpuset);
-			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
+
 			break;
 		default:
 			printf("Using memcpy and submit\n");
@@ -585,6 +597,7 @@ int main(int argc, char *argv[])
 
 	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
 					((times[0].tv_nsec) + (times[0].tv_sec * 1000000000));
+	lat /= num_iter;
 
 	if (rc0 != ACCTEST_STATUS_OK || rc1 != ACCTEST_STATUS_OK
 		|| rc2 != ACCTEST_STATUS_OK)
