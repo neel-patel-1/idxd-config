@@ -136,6 +136,8 @@ int shuffle_host_op(void *buffer, size_t size){
 	return 1;
 }
 
+// dsa parallelized, iaa parallelized, dsa -> iaa parallelized
+
 int host_op(void *buffer, size_t size) {
 	uint32_t *ptr;
 	size_t count;
@@ -454,6 +456,7 @@ void parallel_host_ops(void *arg){
 
 }
 
+#include "test_fns.h"
 
 int main(int argc, char *argv[])
 {
@@ -503,6 +506,10 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+
+	multi_iaa_test(tflags, wq_type, dev_id, wq_id, buf_size);
+
+	return 0;
 
 	// iaa setup
 	iaa = acctest_init(tflags);
