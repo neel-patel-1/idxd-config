@@ -864,7 +864,7 @@ static int init_decrypto(struct task *tsk, int tflags, int opcode, unsigned long
 	return ACCTEST_STATUS_OK;
 }
 
-int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain)
+int iaa_init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain)
 {
 	int rc = 0;
 
@@ -1503,7 +1503,7 @@ int iaa_decompress_multi_task_nodes(struct acctest_context *ctx)
 	return ret;
 }
 
-static int iaa_wait_scan(struct acctest_context *ctx, struct task *tsk)
+int iaa_wait_scan(struct acctest_context *ctx, struct task *tsk)
 {
 	struct completion_record *comp = tsk->comp;
 	int rc;
@@ -1790,7 +1790,7 @@ int iaa_extract_multi_task_nodes(struct acctest_context *ctx)
 	return ret;
 }
 
-static int iaa_wait_select(struct acctest_context *ctx, struct task *tsk)
+int iaa_wait_select(struct acctest_context *ctx, struct task *tsk)
 {
 	struct completion_record *comp = tsk->comp;
 	int rc;
@@ -1802,6 +1802,27 @@ static int iaa_wait_select(struct acctest_context *ctx, struct task *tsk)
 	}
 
 	return ACCTEST_STATUS_OK;
+}
+
+int iaa_select_prep_sub_tsk_node(struct acctest_context *ctx, struct task_node *tsk_node)
+{
+	int ret = ACCTEST_STATUS_OK;
+
+	if (tsk_node) {
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+
+		tsk_node->tsk->dflags |= IDXD_OP_FLAG_RD_SRC2_2ND;
+		iaa_prep_select(tsk_node->tsk);
+	}
+
+	if (tsk_node) {
+		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+	}
+	info("Submitted select job\n");
+
+	return ret;
 }
 
 int iaa_select_multi_task_nodes(struct acctest_context *ctx)

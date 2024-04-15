@@ -160,6 +160,8 @@ void dsa_reprep_dif(struct acctest_context *ctx, struct task *tsk);
 void dsa_prep_cflush(struct task *tsk);
 void dsa_reprep_cflush(struct acctest_context *ctx, struct task *tsk);
 
+int dsa_memcpy_prep_sub_task_node(struct acctest_context *ctx, struct task_node *tsk_node);
+
 int task_result_verify(struct task *tsk, int mismatch_expected);
 int task_result_verify_task_nodes(struct acctest_context *ctx, int mismatch_expected);
 int task_result_verify_memcpy(struct task *tsk, int mismatch_expected);

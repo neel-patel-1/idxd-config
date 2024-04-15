@@ -7,7 +7,7 @@
 #include "accel_test.h"
 #include "accfg_test.h"
 
-int init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain);
+int iaa_init_task(struct task *tsk, int tflags, int opcode, unsigned long src1_xfer_size, int chain);
 
 struct iaa_latencies {
     uint64_t total_alloc_time[2];
@@ -60,6 +60,10 @@ void iaa_prep_expand(struct task *tsk);
 void iaa_prep_transl_fetch(struct task *tsk);
 void iaa_prep_encrypto(struct task *tsk);
 void iaa_prep_decrypto(struct task *tsk);
+
+int iaa_wait_scan(struct acctest_context *ctx, struct task *tsk);
+int iaa_select_prep_sub_tsk_node(struct acctest_context *ctx, struct task_node *tsk_node);
+int iaa_wait_select(struct acctest_context *ctx, struct task *tsk);
 
 int iaa_task_result_verify(struct task *tsk, int mismatch_expected);
 int iaa_task_result_verify_task_nodes(struct acctest_context *ctx, int mismatch_expected);

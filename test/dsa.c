@@ -793,6 +793,28 @@ again:
 	return ACCTEST_STATUS_OK;
 }
 
+int dsa_memcpy_prep_sub_task_node(struct acctest_context *ctx, struct task_node *tsk_node)
+{
+	int ret = ACCTEST_STATUS_OK;
+
+	if (tsk_node) {
+		tsk_node->tsk->dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+		dsa_prep_memcpy(tsk_node->tsk);
+		// printf("Work prep time: %lu\n", prep_op);
+	}
+
+	if (tsk_node) {
+		if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
+			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
+		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+	}
+	info("Submitted memcpy job\n");
+
+	return ret;
+}
+
 int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;

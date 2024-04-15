@@ -307,12 +307,12 @@ static int acctest_enqcmd(struct acctest_context *ctx, struct hw_desc *hw)
 	int retry_count = 0;
 	int ret = 0;
 
-	while (retry_count < 3) {
+	while (true) {
 		if (!enqcmd(ctx->wq_reg, hw))
 			break;
 
-		info("retry\n");
-		retry_count++;
+		// info("retry\n");
+		// retry_count++;
 	}
 
 	return ret;
