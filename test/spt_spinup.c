@@ -227,12 +227,8 @@ void *app_worker_thread(void *arg){
 	while (1) {
 			host_op_args *arg = (host_op_args *)dequeue(args->ring);
 			if (arg != NULL) {
-				pth = pth_spawn(attr, host_operation_thread, arg);
-				if(pth == NULL){
-					printf("Error creating host op thread\n");
-					exit(-1);
-				}
-				pth_join(pth, NULL);
+				host_operation_thread(arg);
+
 			}
 	}
 	return NULL;
