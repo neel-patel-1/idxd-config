@@ -238,6 +238,8 @@ void *app_worker_thread(void *arg){
 
 }
 
+#include "thread_utils.h"
+
 void *memcpy_and_submit(void *arg) {
     struct task_node *dsa_tsk_node, *iaa_tsk_node;
     int rc;
@@ -376,6 +378,67 @@ void submit_poll_hostop_submit_poll(void *arg){
 
 }
 
+void parallel_host_ops(void *arg){
+	struct task_node *dsa_tsk_node, *iaa_tsk_node;
+	/* submit */
+	int rc = 0;
+	clock_gettime(CLOCK_MONOTONIC, &times[0]);
+	rc = dsa_memcpy_submit_task_nodes(dsa);
+	if (rc != ACCTEST_STATUS_OK)
+		pthread_exit((void *)(intptr_t)rc);
+
+	/* memcpy and submit */
+	host_op_args *args;
+	dsa_tsk_node = dsa->multi_task_node;
+	iaa_tsk_node = iaa->multi_task_node;
+
+	while (dsa_tsk_node) {
+			rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
+			if (rc != ACCTEST_STATUS_OK)
+					pthread_exit((void *)(intptr_t)rc);
+
+			args = malloc(sizeof(host_op_args));
+			if (args == NULL) {
+					pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+			}
+			int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
+			// if(do_spt_spinup){
+			// 	args->host_op = selected_op;
+			// 	args->buffer = dsa_tsk_node->tsk->dst1;
+			// 	args->size = buf_size;
+			// 	enqueue(ring, args);
+
+			// } else {
+				selected_op(dsa_tsk_node->tsk->dst1, buf_size);
+				// no atomic ctr update from thread -- do it here
+				finalHostOpCtr += 1;
+				if(finalHostOpCtr == expectedHostOps){
+					complete = 1;
+				}
+			// }
+
+        // Continue with other operations
+        iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
+        iaa_prep_sub_task_node(iaa, iaa_tsk_node);
+
+        dsa_tsk_node = dsa_tsk_node->next;
+        iaa_tsk_node = iaa_tsk_node->next;
+    }
+
+		iaa_tsk_node = iaa->multi_task_node;
+		while(iaa_tsk_node) {
+		// printf("Wait for IAA itr: %d\n", itr++);
+        rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
+        if (rc != ACCTEST_STATUS_OK)
+            pthread_exit((void *)(intptr_t)rc);
+        iaa_tsk_node = iaa_tsk_node->next;
+    }
+		while( !complete ){}
+		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+    pthread_exit((void *)ACCTEST_STATUS_OK);
+
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -389,7 +452,7 @@ int main(int argc, char *argv[])
 	// unsigned int num_iter = 1;
 	pthread_t dsa_wait_thread, iaa_wait_thread;
 	pthread_t dsa_submit_thread;
-	int dedicated_pollers = 0;
+	int test_config = 0;
 	int rc0, rc1, rc2;
 	long long lat = 0;
 
@@ -402,9 +465,6 @@ int main(int argc, char *argv[])
 		// case 'i':
 		// 	num_iter = strtoul(optarg, NULL, 0);
 		// 	break;
-		case 't':
-			ms_timeout = strtoul(optarg, NULL, 0);
-			break;
 		case 'n':
 			num_desc = strtoul(optarg, NULL, 0);
 			expectedHostOps = num_desc;
@@ -414,8 +474,13 @@ int main(int argc, char *argv[])
 			break;
 		case 'h':
 			host_op_sel = strtoul(optarg, NULL, 0);
+			break;
 		case 's':
 			do_spt_spinup = strtoul(optarg, NULL, 0);
+			break;
+		case 't':
+			test_config = strtoul(optarg, NULL, 0);
+			break;
 		default:
 			break;
 		}
@@ -457,33 +522,45 @@ int main(int argc, char *argv[])
 	if (rc != ACCTEST_STATUS_OK)
 		goto error;
 
-	if(dedicated_pollers){
-		cpu_set_t cpuset;
-		pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
-		CPU_ZERO(&cpuset);
-		CPU_SET(2, &cpuset);
-		pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
+	cpu_set_t cpuset;
+	switch (test_config){
+		case 0:
+			pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
+			CPU_ZERO(&cpuset);
+			CPU_SET(2, &cpuset);
+			pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
 
-		pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
-		CPU_ZERO(&cpuset);
-		CPU_SET(3, &cpuset);
-		pthread_setaffinity_np(iaa_wait_thread, sizeof(cpu_set_t), &cpuset);
+			pthread_create(&iaa_wait_thread, NULL, wait_for_iaa, NULL);
+			CPU_ZERO(&cpuset);
+			CPU_SET(3, &cpuset);
+			pthread_setaffinity_np(iaa_wait_thread, sizeof(cpu_set_t), &cpuset);
 
-		pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
-		CPU_ZERO(&cpuset);
-		CPU_SET(1, &cpuset);
-		pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
+			pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
+			CPU_ZERO(&cpuset);
+			CPU_SET(1, &cpuset);
+			pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
 
 
-	    // Wait for threads to finish
-		pthread_join(dsa_submit_thread, (void **)&rc0);
-    pthread_join(dsa_wait_thread, (void **)&rc1);
-    pthread_join(iaa_wait_thread, (void **)&rc2);
-	} else {
-		pthread_t submit_poll_hostop_submit_poll_thread;
-		pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
-		pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
+				// Wait for threads to finish
+			pthread_join(dsa_submit_thread, (void **)&rc0);
+			pthread_join(dsa_wait_thread, (void **)&rc1);
+			pthread_join(iaa_wait_thread, (void **)&rc2);
+			break;
+		case 1:
+			pthread_t submit_poll_hostop_submit_poll_thread;
+			pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
+			pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
+			CPU_ZERO(&cpuset);
+			CPU_SET(2, &cpuset);
+			pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
+			break;
+		case 2:
+
+		default:
+			printf("Using memcpy and submit\n");
+			break;
 	}
+
 
 
 	lat = ((times[1].tv_nsec) + (times[1].tv_sec * 1000000000))  -
