@@ -384,7 +384,7 @@ void parallel_host_ops(void *arg){
 
 	/* spin up kworkers for host ops */
 	opRing **ring;
-	createKWorkers(ring, numKWorkers, SINGLE_SERIAL_CORE+1);
+	createKWorkers(&ring, numKWorkers, SINGLE_SERIAL_CORE+1);
 
 
 	/* submit */
@@ -399,6 +399,9 @@ void parallel_host_ops(void *arg){
 	dsa_tsk_node = dsa->multi_task_node;
 	iaa_tsk_node = iaa->multi_task_node;
 
+	/* kworker ring idx */
+	int idx = 0;
+
 	while (dsa_tsk_node) {
 			rc = dsa_wait_memcpy(dsa, dsa_tsk_node->tsk);
 			if (rc != ACCTEST_STATUS_OK)
@@ -410,18 +413,19 @@ void parallel_host_ops(void *arg){
 			}
 			int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
 			// if(do_spt_spinup){
-			// 	args->host_op = selected_op;
-			// 	args->buffer = dsa_tsk_node->tsk->dst1;
-			// 	args->size = buf_size;
-			// 	enqueue(ring, args);
+				args->host_op = selected_op;
+				args->buffer = dsa_tsk_node->tsk->dst1;
+				args->size = buf_size;
+				enqueue(ring[idx], args);
+				idx = (idx + 1) % numKWorkers;
 
 			// } else {
-				selected_op(dsa_tsk_node->tsk->dst1, buf_size);
+				// selected_op(dsa_tsk_node->tsk->dst1, buf_size);
 				// no atomic ctr update from thread -- do it here
-				finalHostOpCtr += 1;
-				if(finalHostOpCtr == expectedHostOps){
-					complete = 1;
-				}
+				// finalHostOpCtr += 1;
+				// if(finalHostOpCtr == expectedHostOps){
+				// 	complete = 1;
+				// }
 			// }
 
         // Continue with other operations
@@ -530,7 +534,7 @@ int main(int argc, char *argv[])
 		goto error;
 
 	cpu_set_t cpuset;
-	switch (test_config){
+	switch (test_config){ /* dedicated full batch submit, dedicated poll + host op + submit ...*/
 		case 0:
 			pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
 			CPU_ZERO(&cpuset);
@@ -553,7 +557,7 @@ int main(int argc, char *argv[])
 			pthread_join(dsa_wait_thread, (void **)&rc1);
 			pthread_join(iaa_wait_thread, (void **)&rc2);
 			break;
-		case 1:
+		case 1: /* single serial submit, poll, host op, submit ...*/
 			pthread_t submit_poll_hostop_submit_poll_thread;
 			pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
 			pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
@@ -561,8 +565,14 @@ int main(int argc, char *argv[])
 			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
 			pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
 			break;
-		case 2:
-
+		case 2: /* single serial submit, poll, parallelized host op, submit ...*/
+			pthread_t single_core_parallelized_host_ops;
+			pthread_create(&single_core_parallelized_host_ops, NULL, parallel_host_ops, NULL);
+			pthread_join(single_core_parallelized_host_ops, (void **)&rc0);
+			CPU_ZERO(&cpuset);
+			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
+			pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
+			break;
 		default:
 			printf("Using memcpy and submit\n");
 			break;
