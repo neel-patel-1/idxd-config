@@ -377,9 +377,16 @@ void submit_poll_hostop_submit_poll(void *arg){
     pthread_exit((void *)ACCTEST_STATUS_OK);
 
 }
-
+#define SINGLE_SERIAL_CORE 4
 void parallel_host_ops(void *arg){
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
+	int numKWorkers = 2;
+
+	/* spin up kworkers for host ops */
+	opRing **ring;
+	createKWorkers(ring, numKWorkers, SINGLE_SERIAL_CORE+1);
+
+
 	/* submit */
 	int rc = 0;
 	clock_gettime(CLOCK_MONOTONIC, &times[0]);
@@ -551,7 +558,7 @@ int main(int argc, char *argv[])
 			pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
 			pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
 			CPU_ZERO(&cpuset);
-			CPU_SET(2, &cpuset);
+			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
 			pthread_setaffinity_np(dsa_wait_thread, sizeof(cpu_set_t), &cpuset);
 			break;
 		case 2:
