@@ -381,7 +381,8 @@ void submit_poll_hostop_submit_poll(void *arg){
 #define SINGLE_SERIAL_CORE 4
 void parallel_host_ops(void *arg){
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
-	int numKWorkers = 1;
+	parallelTdOps *pTdOps = (parallelTdOps *)arg;
+	int numKWorkers = pTdOps->nKWorkers;
 
 	/* spin up kworkers for host ops */
 	opRing **ring;
@@ -571,8 +572,10 @@ int main(int argc, char *argv[])
 			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
 			break;
 		case 2: /* single serial submit, poll, parallelized host op, submit ...*/
+			parallelTdOps *pTdOps = malloc(sizeof(parallelTdOps));
+			pTdOps->nKWorkers = nKWorkers;
 			pthread_t single_core_parallelized_host_ops;
-			pthread_create(&single_core_parallelized_host_ops, NULL, parallel_host_ops, NULL);
+			pthread_create(&single_core_parallelized_host_ops, NULL, parallel_host_ops, (void *)pTdOps);
 			pthread_setaffinity_np(single_core_parallelized_host_ops, sizeof(cpu_set_t), &cpuset);
 			pthread_join(single_core_parallelized_host_ops, (void **)&rc0);
 			CPU_ZERO(&cpuset);

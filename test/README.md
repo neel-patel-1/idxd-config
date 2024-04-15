@@ -1,5 +1,16 @@
 Run
 =====
+
+---
+#
+```
+make
+./spt_spinup -n 1024 -t 2
+```
+
+---
+
+
 #from:/home/n869p538/spr-accel-profiling/interrupt_qat_dc/idxd-config/test
 make
 
