@@ -31,8 +31,18 @@ void createKWorkers(opRing ***pRings, int numKWorkers, int startCPU){
   *pRings = rings;
 }
 
+
 /* Stage Operation Functions */
 /* To be called instantiated as a pthread or called in a serial chain test */
+
+int submit_memcpy_ops(struct acctest_context *dsa){
+  int rc = 0;
+	clock_gettime(CLOCK_MONOTONIC, &times[0]);
+	rc = dsa_memcpy_submit_task_nodes(dsa);
+	if (rc != ACCTEST_STATUS_OK)
+		pthread_exit((void *)(intptr_t)rc);
+}
+
 int memcpy_and_forward(struct acctest_context *dsa, struct acctest_context *iaa, int nKWorkers, opRing **ring){
   int rc;
   struct task_node *dsa_tsk_node, *iaa_tsk_node;
