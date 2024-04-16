@@ -631,7 +631,7 @@ int main(int argc, char *argv[])
 			acctest_free_task(iaa);
 			break;
 		case 3:
-			multi_iaa_test(num_ax, tflags, wq_type, dev_id, wq_id, buf_size);
+			multi_iaa_test(num_ax, tflags, wq_type, dev_id, wq_id, buf_size, num_desc);
 			break;
 		case 4:
 			#define RR_POLL_CORE 4

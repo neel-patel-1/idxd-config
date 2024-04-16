@@ -1,6 +1,6 @@
 
 
-int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id, size_t buf_size)
+int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id, size_t buf_size, int num_desc)
 {
   int rc;
   struct acctest_context **iaa;
@@ -23,7 +23,7 @@ int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id,
   }
 
   for(int i=0; i<num_iaas; i++){
-    rc = init_iaa_task_nodes(iaa[i], buf_size, tflags);
+    rc = init_iaa_task_nodes(iaa[i], buf_size, tflags, num_desc);
     if (rc != ACCTEST_STATUS_OK)
       return rc;
   }
@@ -35,7 +35,7 @@ int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id,
 
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   /* Submission / work distribution scheme -- round robin requests across all iaa instances*/
-  while(iaa_tsk_node[0]){
+  while(iaa_tsk_node[num_iaas-1]){
     for(int i=0; i<num_iaas; i++){
       iaa_prep_sub_task_node(iaa[i], iaa_tsk_node[i]);
       iaa_tsk_node[i] = iaa_tsk_node[i]->next;

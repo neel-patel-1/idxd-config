@@ -90,11 +90,16 @@ int memcpy_and_forward(struct acctest_context *dsa, struct acctest_context *iaa,
 
 
 /* Initialize the task nodes with buffers and work description/ors*/
-int init_iaa_task_nodes( struct acctest_context *iaa, size_t buf_size, int tflags){
+int init_iaa_task_nodes( struct acctest_context *iaa, size_t buf_size, int tflags, int num_desc){
   int rc;
   struct task_node *iaa_tsk_node;
-  iaa_tsk_node = iaa->multi_task_node;
 
+
+  rc = acctest_alloc_multiple_tasks(iaa, num_desc);
+	if (rc != ACCTEST_STATUS_OK)
+		return rc;
+
+  iaa_tsk_node = iaa->multi_task_node;
   while (iaa_tsk_node) {
 		iaa_tsk_node->tsk->xfer_size = buf_size;
 
