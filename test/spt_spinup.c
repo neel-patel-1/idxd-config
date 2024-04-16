@@ -47,7 +47,7 @@ void *dsa_submit(void *arg);
 void *host_operation_thread(void *arg);
 int shuffle_host_op(void *buffer, size_t size);
 int stencil(void *buffer, size_t size);
-int host_op(void *buffer, size_t size);
+int book_keeping(void *buffer, size_t size);
 
 static int setup_dsa_iaa(int num_desc) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
@@ -87,13 +87,13 @@ static int setup_dsa_iaa(int num_desc) {
 int (*select_host_op(int host_op_sel))(void *buffer, size_t size){
 	switch(host_op_sel){
 		case 0:
-			return host_op;
+			return book_keeping;
 		case 1:
 			return shuffle_host_op;
 		case 2:
 			return stencil;
 		default:
-			return host_op;
+			return book_keeping;
 	}
 }
 int stencil(void *buffer, size_t size){
@@ -138,24 +138,32 @@ int shuffle_host_op(void *buffer, size_t size){
 
 // dsa parallelized, iaa parallelized, dsa -> iaa parallelized
 
-int host_op(void *buffer, size_t size) {
-	uint32_t *ptr;
-	size_t count;
-	size_t num_elements;
-    if (buffer == NULL || size % sizeof(uint32_t) != 0) {
-        return -1;
-    }
+/* internally “serializing and compressing protobufs” before writing
+to file, there are often small, unrelated book-keeping operations
+between the two accelerated operations. - https://dl-acm-org.www2.lib.ku.edu/doi/pdf/10.1145/3579371.3589074*/
 
-    ptr = (uint32_t *) buffer;
-    count = 0;
-    num_elements = size / sizeof(uint32_t);
+int book_keeping(void *buffer, size_t size) {
+		typedef struct {
+			int key;
+			int val;
+			struct Node *left, *right;
+		} Node;
 
-    for (size_t i = 0; i < num_elements; ++i) {
-        if (ptr[i] >= 10000) {
-            count++;
-        }
-    }
-    return count;
+	    // Find index of first key greater than or equal to k
+		int *vals = *(int *)buffer;
+		Node head;
+		Node *top = &(head);
+		for(int i=0; i<10; i++){
+			top->left = (Node *)malloc(sizeof(Node));
+			top->right = (Node *)malloc(sizeof(Node));
+			Node *temp = top->left;
+			temp->key = vals[i];
+			temp->val = vals[i+1];
+			temp = top->right;
+			temp->key = vals[i+2];
+			temp->val = vals[i+3];
+		}
+
 }
 
 void *dsa_submit(void *arg) {
