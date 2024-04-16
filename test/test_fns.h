@@ -105,12 +105,18 @@ int single_iaa_test( void *arg){
 
   /* setup */
   iaa = acctest_init(tflags);
+  iaa->dev_type = ACCFG_DEVICE_IAX;
   if (!iaa)
     return -ENOMEM;
   rc = acctest_alloc(iaa, wq_type, dev_id, wq_id);
   if (rc < 0)
     return -ENOMEM;
+  if (buf_size > iaa->max_xfer_size) {
+    err("invalid transfer size: %lu\n", buf_size);
+    return -EINVAL;
+  }
   init_iaa_task_nodes(iaa, buf_size, tflags, num_desc);
+  iaa_tsk_node = iaa->multi_task_node;
 
   /* submit */
   while(iaa_tsk_node){
@@ -122,9 +128,11 @@ int single_iaa_test( void *arg){
   iaa_tsk_node = iaa->multi_task_node;
   struct completion_record *next_iaa_comp = iaa_tsk_node->tsk->comp;
   while(iaa_tsk_node){
-    if(next_iaa_comp->status == 1){
+    if(next_iaa_comp->status){
       iaa_tsk_node = iaa_tsk_node->next;
-      next_iaa_comp = iaa_tsk_node->tsk->comp;
+      if(iaa_tsk_node){
+        next_iaa_comp = iaa_tsk_node->tsk->comp;
+      }
     }
   }
 
