@@ -27,6 +27,7 @@ _Atomic int intermediate_host_ops_complete = 0;
 _Atomic int host_op_sel = 0;
 _Atomic int do_spt_spinup = 0;
 _Atomic int num_iter = 1;
+_Atomic int num_ax = 1;
 
 
 static struct timespec times[2];
@@ -538,7 +539,7 @@ int main(int argc, char *argv[])
 	int nKWorkers;
 	long long lat = 0;
 
-	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:k:")) != -1) {
+	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:k:p:a:")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
@@ -564,6 +565,12 @@ int main(int argc, char *argv[])
 			break;
 		case 'k':
 			nKWorkers = strtoul(optarg, NULL, 0);
+			break;
+		case 'p':
+			buf_size = strtoul(optarg, NULL, 0);
+			break;
+		case 'a':
+			num_ax = strtoul(optarg, NULL, 0);
 			break;
 		default:
 			break;
@@ -594,6 +601,8 @@ int main(int argc, char *argv[])
 			pthread_join(dsa_submit_thread, (void **)&rc0);
 			pthread_join(dsa_wait_thread, (void **)&rc1);
 			pthread_join(iaa_wait_thread, (void **)&rc2);
+			acctest_free_task(dsa);
+			acctest_free_task(iaa);
 			break;
 		case 1: /* single serial submit, poll, host op, submit ...*/
 			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
@@ -604,7 +613,8 @@ int main(int argc, char *argv[])
 			pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
 			pthread_setaffinity_np(submit_poll_hostop_submit_poll_thread, sizeof(cpu_set_t), &cpuset);
 			pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
-
+			acctest_free_task(dsa);
+			acctest_free_task(iaa);
 			break;
 		case 2: /* single serial submit, poll, parallelized host op, submit ...*/
 			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
@@ -617,10 +627,11 @@ int main(int argc, char *argv[])
 			pthread_create(&single_core_parallelized_host_ops, NULL, parallel_host_ops, (void *)pTdOps);
 			pthread_setaffinity_np(single_core_parallelized_host_ops, sizeof(cpu_set_t), &cpuset);
 			pthread_join(single_core_parallelized_host_ops, (void **)&rc0);
-
+			acctest_free_task(dsa);
+			acctest_free_task(iaa);
 			break;
 		case 3:
-			multi_iaa_test(tflags, wq_type, dev_id, wq_id, buf_size);
+			multi_iaa_test(4, tflags, wq_type, dev_id, wq_id, buf_size);
 			break;
 		case 4:
 			#define RR_POLL_CORE 4
@@ -639,6 +650,8 @@ int main(int argc, char *argv[])
 
 			pthread_join(round_robin_poll_thread, (void **)&rc0);
 			pthread_join(dsa_submit_thread, (void **)&rc1);
+			acctest_free_task(dsa);
+			acctest_free_task(iaa);
 			break;
 		default:
 			printf("Using memcpy and submit\n");
@@ -659,11 +672,10 @@ int main(int argc, char *argv[])
 	printf("Total Latency: %lld ns\n", lat);
 	printf("Throughput: %f\n", (buf_size * num_desc)/(double)lat);
 
-    acctest_free_task(dsa);
-	acctest_free_task(iaa);
+
 
  error:
-	acctest_free(dsa);
-	acctest_free(iaa);
+	// acctest_free(dsa);
+	// acctest_free(iaa);
 	return rc;
 }

@@ -1,9 +1,8 @@
 
 
-int multi_iaa_test(int tflags, int wq_type, int dev_id, int wq_id, size_t buf_size)
+int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id, size_t buf_size)
 {
   int rc;
-  int num_iaas = 4;
   struct acctest_context **iaa;
   iaa = malloc(num_iaas * sizeof(struct acctest_context *));
 
@@ -34,6 +33,7 @@ int multi_iaa_test(int tflags, int wq_type, int dev_id, int wq_id, size_t buf_si
     iaa_tsk_node[i] = iaa[i]->multi_task_node;
   }
 
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
   /* Submission / work distribution scheme -- round robin requests across all iaa instances*/
   while(iaa_tsk_node[0]){
     for(int i=0; i<num_iaas; i++){
@@ -42,14 +42,18 @@ int multi_iaa_test(int tflags, int wq_type, int dev_id, int wq_id, size_t buf_si
     }
   }
 
+
+  /*Reset tsk nodes for polling phase */
   for(int i=0; i<num_iaas; i++){
     iaa_tsk_node[i] = iaa[i]->multi_task_node;
   }
-  while(iaa_tsk_node[0]){
+  while(iaa_tsk_node[num_iaas-1]){
     for(int i=0; i<num_iaas; i++){
       iaa_wait_compress(iaa[i], iaa_tsk_node[i]);
+      iaa_tsk_node[i] = iaa_tsk_node[i]->next;
     }
   }
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
 }
 
