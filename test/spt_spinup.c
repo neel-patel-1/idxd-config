@@ -631,7 +631,7 @@ int main(int argc, char *argv[])
 			acctest_free_task(iaa);
 			break;
 		case 3:
-			multi_iaa_test(4, tflags, wq_type, dev_id, wq_id, buf_size);
+			multi_iaa_test(num_ax, tflags, wq_type, dev_id, wq_id, buf_size);
 			break;
 		case 4:
 			#define RR_POLL_CORE 4
@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
 	// Final verification and cleanup
 
 	printf("Total Latency: %lld ns\n", lat);
-	printf("Throughput: %f\n", (buf_size * num_desc)/(double)lat);
+	printf("Throughput: %f\n", (buf_size * num_desc * num_ax)/(double)lat);
 
 
 
