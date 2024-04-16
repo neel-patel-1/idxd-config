@@ -74,17 +74,16 @@ int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id,
 
   int complete = 0;
   while (!complete) {
-    complete = 2;
+    complete = 1;
     for(int i=0; i<num_iaas; i++){
-      int p = increment_comp_if_tsk_valid(iaa_tsk_node[i], next_iaa_comp[i]);
-      if (p == 0){ /* unsuccessful poll on an existing task */
+      if(iaa_tsk_node[i]){
         complete = 0;
-      }
-      else if(p == 1){ /* successful poll on an existing task */
-        complete = 0;
-      }
-      else if(p == 2){ /* no more tasks to poll */
-        complete = complete && p;
+        if(next_iaa_comp[i]->status){
+          iaa_tsk_node[i] = iaa_tsk_node[i]->next;
+          if(iaa_tsk_node[i]){
+            next_iaa_comp[i] = iaa_tsk_node[i]->tsk->comp;
+          }
+        }
       }
     }
   }
