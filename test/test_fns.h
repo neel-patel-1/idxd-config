@@ -140,7 +140,7 @@ int single_iaa_test( void *arg){
 
 }
 
-int multi_iaa_bandwidth(int num_wqs, int num_descs){
+int multi_iaa_bandwidth(int num_wqs, int num_descs, int buf_size){
   iaa_ax_args *args = malloc(num_wqs * sizeof(iaa_ax_args));
   pthread_t threads[num_wqs];
   for(int i=0; i<num_wqs; i++){
@@ -148,7 +148,7 @@ int multi_iaa_bandwidth(int num_wqs, int num_descs){
     args[i].wq_type = 0;
     args[i].dev_id = 1;
     args[i].wq_id = i;
-    args[i].buf_size = 4096;
+    args[i].buf_size = buf_size;
     args[i].num_desc = num_descs;
     pthread_create(&(threads[i]),NULL,single_iaa_test,(void *)&(args[i]));
     cpu_set_t cpuset;

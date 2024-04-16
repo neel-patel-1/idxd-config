@@ -655,7 +655,7 @@ int main(int argc, char *argv[])
 			acctest_free_task(iaa);
 			break;
 		case 5:
-			multi_iaa_bandwidth(num_ax, num_desc);
+			multi_iaa_bandwidth(num_ax, num_desc, buf_size);
 		default:
 			printf("Using memcpy and submit\n");
 			break;
