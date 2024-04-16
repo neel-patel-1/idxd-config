@@ -507,51 +507,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	multi_iaa_test(tflags, wq_type, dev_id, wq_id, buf_size);
-
-	return 0;
-
-	// iaa setup
-	iaa = acctest_init(tflags);
-	iaa->dev_type = ACCFG_DEVICE_IAX;
-
-	if (!iaa)
-		return -ENOMEM;
-
-	rc = acctest_alloc(iaa, wq_type, dev_id, wq_id);
-	if (rc < 0)
-		return -ENOMEM;
-
-	if (buf_size > iaa->max_xfer_size) {
-		err("invalid transfer size: %lu\n", buf_size);
-		return -EINVAL;
-	}
-
-	// DSA setup
-	dsa = acctest_init(tflags);
-	dsa->dev_type = ACCFG_DEVICE_DSA;
-
-	if (!dsa)
-		return -ENOMEM;
-
-	rc = acctest_alloc(dsa, wq_type, dev_id, wq_id);
-	if (rc < 0)
-		return -ENOMEM;
-
-	if (buf_size > dsa->max_xfer_size) {
-		err("invalid transfer size: %lu\n", buf_size);
-		return -EINVAL;
-	}
-
-	rc = setup_dsa_iaa(num_desc);
-	if (rc != ACCTEST_STATUS_OK)
-		goto error;
-
-	accfg_set_log_priority(dsa->ctx, 10);
-	accfg_set_log_priority(iaa->ctx, 10);
 	cpu_set_t cpuset;
 	switch (test_config){ /* dedicated full batch submit, dedicated poll + host op + submit ...*/
 		case 0:
+			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
 			pthread_create(&dsa_wait_thread, NULL, memcpy_and_submit, NULL);
 			CPU_ZERO(&cpuset);
 			CPU_SET(2, &cpuset);
@@ -574,6 +533,7 @@ int main(int argc, char *argv[])
 			pthread_join(iaa_wait_thread, (void **)&rc2);
 			break;
 		case 1: /* single serial submit, poll, host op, submit ...*/
+			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
 			pthread_t submit_poll_hostop_submit_poll_thread;
 			CPU_ZERO(&cpuset);
 			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
@@ -584,6 +544,7 @@ int main(int argc, char *argv[])
 
 			break;
 		case 2: /* single serial submit, poll, parallelized host op, submit ...*/
+			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
 			parallelTdOps *pTdOps = malloc(sizeof(parallelTdOps));
 			pTdOps->nKWorkers = nKWorkers;
 			pthread_t single_core_parallelized_host_ops;
@@ -594,6 +555,9 @@ int main(int argc, char *argv[])
 			pthread_setaffinity_np(single_core_parallelized_host_ops, sizeof(cpu_set_t), &cpuset);
 			pthread_join(single_core_parallelized_host_ops, (void **)&rc0);
 
+			break;
+		case 3:
+			multi_iaa_test(tflags, wq_type, dev_id, wq_id, buf_size);
 			break;
 		default:
 			printf("Using memcpy and submit\n");

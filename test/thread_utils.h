@@ -87,3 +87,89 @@ int memcpy_and_forward(struct acctest_context *dsa, struct acctest_context *iaa,
   pthread_exit((void *)ACCTEST_STATUS_OK);
 
 }
+
+
+/* Initialize the task nodes with buffers and work description/ors*/
+int init_iaa_task_nodes( struct acctest_context *iaa, size_t buf_size, int tflags){
+  int rc;
+  struct task_node *iaa_tsk_node;
+  iaa_tsk_node = iaa->multi_task_node;
+
+  while (iaa_tsk_node) {
+		iaa_tsk_node->tsk->xfer_size = buf_size;
+
+		rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		iaa_tsk_node = iaa_tsk_node->next;
+	}
+	return rc;
+}
+
+int init_iaa_dsa_task_nodes(struct acctest_context **pdsa, struct acctest_context **piaa, size_t buf_size, int num_desc, int tflags, int wq_type, int dev_id, int wq_id){
+  struct task_node *dsa_tsk_node, *iaa_tsk_node;
+	int rc = ACCTEST_STATUS_OK;
+  struct acctest_context *dsa = NULL;
+  struct acctest_context *iaa = NULL;
+
+  dsa = acctest_init(tflags);
+	dsa->dev_type = ACCFG_DEVICE_DSA;
+
+	if (!dsa)
+		return -ENOMEM;
+
+	rc = acctest_alloc(dsa, wq_type, dev_id, wq_id);
+	if (rc < 0)
+		return -ENOMEM;
+
+	if (buf_size > dsa->max_xfer_size) {
+		err("invalid transfer size: %lu\n", buf_size);
+		return -EINVAL;
+	}
+
+	iaa = acctest_init(tflags);
+	iaa->dev_type = ACCFG_DEVICE_IAX;
+
+	if (!iaa)
+		return -ENOMEM;
+
+	rc = acctest_alloc(iaa, wq_type, dev_id, wq_id);
+	if (rc < 0)
+		return -ENOMEM;
+
+	if (buf_size > iaa->max_xfer_size) {
+		err("invalid transfer size: %lu\n", buf_size);
+		return -EINVAL;
+	}
+
+	info("testmemory: opcode %d len %#lx tflags %#x num_desc %ld\n",
+	     DSA_OPCODE_MEMMOVE, buf_size, tflags, num_desc);
+
+	(dsa)->is_batch = 0;
+
+	rc = acctest_alloc_multiple_tasks(dsa, num_desc);
+	if (rc != ACCTEST_STATUS_OK)
+		return rc;
+	rc = acctest_alloc_multiple_tasks(iaa, num_desc);
+	if (rc != ACCTEST_STATUS_OK)
+		return rc;
+
+	/* allocate memory to src and dest buffers and fill in the desc for all the nodes*/
+	dsa_tsk_node = dsa->multi_task_node;
+	iaa_tsk_node = iaa->multi_task_node;
+	while (dsa_tsk_node) {
+		dsa_tsk_node->tsk->xfer_size = buf_size;
+
+		rc = dsa_init_task(dsa_tsk_node->tsk, tflags, DSA_OPCODE_MEMMOVE, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		iaa_tsk_node = iaa_tsk_node->next;
+		dsa_tsk_node = dsa_tsk_node->next;
+	}
+  *pdsa = dsa;
+  *piaa = iaa;
+	return rc;
+}

@@ -21,4 +21,11 @@ int multi_iaa_test(int tflags, int wq_type, int dev_id, int wq_id, size_t buf_si
       return -EINVAL;
     }
   }
+
+  for(int i=0; i<num_iaas; i++){
+    rc = init_iaa_task_nodes(iaa[i], buf_size, tflags);
+    if (rc != ACCTEST_STATUS_OK)
+      return rc;
+  }
+
 }
