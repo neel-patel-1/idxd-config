@@ -474,6 +474,7 @@ void round_robin_poll(void *arg){
 	iaa_tsk_node = iaa->multi_task_node;
 
 	struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
+	struct task_node *dsa_to_iaa_fwd_tsk_node = iaa_tsk_node;
 	struct completion_record *next_iaa_comp = iaa_tsk_node->tsk->comp;
 
 	for(int i=0; i<num_iter; i++){
@@ -481,27 +482,35 @@ void round_robin_poll(void *arg){
 
 		while(dsa_tsk_node || iaa_tsk_node){
 			if(dsa_tsk_node){
-				args = malloc(sizeof(host_op_args));
-				if (args == NULL) {
-						pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+				if(next_dsa_comp->status){
+					args = malloc(sizeof(host_op_args));
+					if (args == NULL) {
+							pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+					}
+					args->host_op = selected_op;
+					args->buffer = dsa_tsk_node->tsk->dst1;
+					args->size = buf_size;
+					finalHostOpCtr += 1;
+					if(finalHostOpCtr == expectedHostOps){
+						intermediate_host_ops_complete = 1;
+					}
+					/* assume host op is dependent */
+					iaa_tsk_node->tsk->src1 = dsa_tsk_node->tsk->dst1;
+					iaa_prep_sub_task_node(iaa, dsa_to_iaa_fwd_tsk_node);
+					dsa_to_iaa_fwd_tsk_node = dsa_to_iaa_fwd_tsk_node->next;
+
+					dsa_tsk_node = dsa_tsk_node->next;
+					if(dsa_tsk_node)
+						next_dsa_comp = dsa_tsk_node->tsk->comp;
 				}
-				args->host_op = selected_op;
-				args->buffer = dsa_tsk_node->tsk->dst1;
-				args->size = buf_size;
-				finalHostOpCtr += 1;
-				if(finalHostOpCtr == expectedHostOps){
-					intermediate_host_ops_complete = 1;
-				}
-				printf("Host op complete:%d\n", finalHostOpCtr);
-				dsa_tsk_node = dsa_tsk_node->next;
-				if(dsa_tsk_node)
-					next_dsa_comp = dsa_tsk_node->tsk->comp;
 			}
 			if(iaa_tsk_node){
-				printf("IAA op complete:%#lxx\n", iaa_tsk_node->tsk->src1);
-				iaa_tsk_node = iaa_tsk_node->next;
-				if(iaa_tsk_node)
-					next_iaa_comp = iaa_tsk_node->tsk->comp;
+				if(next_iaa_comp->status){
+					iaa_tsk_node = iaa_tsk_node->next;
+					if(iaa_tsk_node)
+						next_iaa_comp = iaa_tsk_node->tsk->comp;
+				}
+
 			}
 		}
 		while( !intermediate_host_ops_complete ){}
