@@ -29,3 +29,8 @@ int multi_iaa_test(int tflags, int wq_type, int dev_id, int wq_id, size_t buf_si
   }
 
 }
+
+int reset_test_ctrs(){
+  intermediate_host_ops_complete = 0;
+  finalHostOpCtr = 0;
+}

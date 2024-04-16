@@ -476,28 +476,38 @@ void round_robin_poll(void *arg){
 	struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
 	struct completion_record *next_iaa_comp = iaa_tsk_node->tsk->comp;
 
-	while(dsa_tsk_node || iaa_tsk_node){
-		if(next_dsa_comp->status){
-			args = malloc(sizeof(host_op_args));
-			if (args == NULL) {
-					pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+	for(int i=0; i<num_iter; i++){
+		reset_test_ctrs();
+
+		while(dsa_tsk_node || iaa_tsk_node){
+			if(next_dsa_comp->status){
+				args = malloc(sizeof(host_op_args));
+				if (args == NULL) {
+						pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+				}
+				args->host_op = selected_op;
+				args->buffer = dsa_tsk_node->tsk->dst1;
+				args->size = buf_size;
+				finalHostOpCtr += 1;
+				if(finalHostOpCtr == expectedHostOps){
+					intermediate_host_ops_complete = 1;
+				}
+				printf("Host op complete:%d\n", finalHostOpCtr);
+				dsa_tsk_node = dsa_tsk_node->next;
+				if(dsa_tsk_node){
+					next_dsa_comp = dsa_tsk_node->tsk->comp;
+				}
 			}
-			args->host_op = selected_op;
-			args->buffer = dsa_tsk_node->tsk->dst1;
-			args->size = buf_size;
-			finalHostOpCtr += 1;
-			if(finalHostOpCtr == expectedHostOps){
-				intermediate_host_ops_complete = 1;
+			if(next_iaa_comp->status){
+				printf("IAA op complete:%#lxx\n", iaa_tsk_node->tsk->src1);
+				iaa_tsk_node = iaa_tsk_node->next;
+				next_iaa_comp = iaa_tsk_node->tsk->comp;
+				if(iaa_tsk_node){
+					next_iaa_comp = iaa_tsk_node->tsk->comp;
+				}
 			}
-			printf("Host op complete:%d\n", finalHostOpCtr);
-			dsa_tsk_node = dsa_tsk_node->next;
-			next_dsa_comp = dsa_tsk_node->tsk->comp;
 		}
-		if(next_iaa_comp->status){
-			printf("IAA op complete:%#lxx\n", iaa_tsk_node->tsk->src1);
-			iaa_tsk_node = iaa_tsk_node->next;
-			next_iaa_comp = iaa_tsk_node->tsk->comp;
-		}
+		while( !intermediate_host_ops_complete ){}
 	}
 }
 
@@ -603,6 +613,24 @@ int main(int argc, char *argv[])
 			break;
 		case 3:
 			multi_iaa_test(tflags, wq_type, dev_id, wq_id, buf_size);
+			break;
+		case 4:
+			#define RR_POLL_CORE 4
+			#define SINGLE_SUBMITTER_CORE 1
+			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
+			CPU_ZERO(&cpuset);
+			CPU_SET(RR_POLL_CORE, &cpuset);
+			pthread_t round_robin_poll_thread;
+			pthread_create(&round_robin_poll_thread, NULL, round_robin_poll, NULL);
+			pthread_setaffinity_np(round_robin_poll_thread, sizeof(cpu_set_t), &cpuset);
+
+			CPU_ZERO(&cpuset);
+			CPU_SET(SINGLE_SUBMITTER_CORE, &cpuset);
+			pthread_create(&dsa_submit_thread, NULL, dsa_submit, NULL);
+			pthread_setaffinity_np(dsa_submit_thread, sizeof(cpu_set_t), &cpuset);
+
+			pthread_join(round_robin_poll_thread, (void **)&rc0);
+			pthread_join(dsa_submit_thread, (void **)&rc1);
 			break;
 		default:
 			printf("Using memcpy and submit\n");
