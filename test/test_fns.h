@@ -1,3 +1,19 @@
+static inline int increment_comp_if_tsk_valid(struct task_node *tsk_node, struct completion_record *comp){
+  if(tsk_node){
+    if(comp->status){
+      tsk_node = tsk_node->next;
+      if(tsk_node){
+        comp = tsk_node->tsk->comp;
+      }
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  else{
+    return 2;
+  }
+}
 
 
 int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id, size_t buf_size, int num_desc)
@@ -29,30 +45,50 @@ int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id,
   }
 
   struct task_node *iaa_tsk_node[num_iaas];
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
   for(int i=0; i<num_iaas; i++){
     iaa_tsk_node[i] = iaa[i]->multi_task_node;
+    while(iaa_tsk_node[i]){
+      iaa_prep_sub_task_node(iaa[i], iaa_tsk_node[i]);
+      iaa_tsk_node[i] = iaa_tsk_node[i]->next;
+
+    }
   }
 
-  clock_gettime(CLOCK_MONOTONIC, &times[0]);
-  /* Submission / work distribution scheme -- round robin requests across all iaa instances*/
-  while(iaa_tsk_node[num_iaas-1]){
-    for(int i=0; i<num_iaas; i++){
+
+
+  struct completion_record *next_iaa_comp[num_iaas];
+
+  /* Submission / work distribution across all iaa instances*/
+  for(int i=0; i<num_iaas; i++){
+    iaa_tsk_node[i] = iaa[i]->multi_task_node;
+    while(iaa_tsk_node[i]){
       iaa_prep_sub_task_node(iaa[i], iaa_tsk_node[i]);
       iaa_tsk_node[i] = iaa_tsk_node[i]->next;
     }
-  }
-
-
-  /*Reset tsk nodes for polling phase */
-  for(int i=0; i<num_iaas; i++){
     iaa_tsk_node[i] = iaa[i]->multi_task_node;
+    next_iaa_comp[i] = iaa_tsk_node[i]->tsk->comp;
   }
-  while(iaa_tsk_node[num_iaas-1]){
+
+  /* Many IAAs to Poll, don't block on any one IAA */
+
+  int complete = 0;
+  while (!complete) {
+    complete = 2;
     for(int i=0; i<num_iaas; i++){
-      iaa_wait_compress(iaa[i], iaa_tsk_node[i]->tsk);
-      iaa_tsk_node[i] = iaa_tsk_node[i]->next;
+      int p = increment_comp_if_tsk_valid(iaa_tsk_node[i], next_iaa_comp[i]);
+      if (p == 0){ /* unsuccessful poll on an existing task */
+        complete = 0;
+      }
+      else if(p == 1){ /* successful poll on an existing task */
+        complete = 0;
+      }
+      else if(p == 2){ /* no more tasks to poll */
+        complete = complete && p;
+      }
     }
   }
+
   clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
 }
