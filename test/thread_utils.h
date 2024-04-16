@@ -73,7 +73,7 @@ int memcpy_and_forward(struct acctest_context *dsa, struct acctest_context *iaa,
 				// no atomic ctr update from thread -- do it here
 				finalHostOpCtr += 1;
 				if(finalHostOpCtr == expectedHostOps){
-					complete = 1;
+					intermediate_host_ops_complete = 1;
 				}
 			}
 

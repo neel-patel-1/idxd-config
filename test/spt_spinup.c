@@ -23,7 +23,7 @@
 
 _Atomic int finalHostOpCtr = 0;
 _Atomic int expectedHostOps = 0;
-_Atomic int complete = 0;
+_Atomic int intermediate_host_ops_complete = 0;
 _Atomic int host_op_sel = 0;
 _Atomic int do_spt_spinup = 0;
 _Atomic int num_iter = 1;
@@ -182,7 +182,7 @@ void *host_operation_thread(void *arg) {
     args->count = args->host_op(args->buffer, args->size);  // Store the result in the structure
 		finalHostOpCtr += 1;
 		if(finalHostOpCtr == expectedHostOps){
-			complete = 1;
+			intermediate_host_ops_complete = 1;
 		}
     return NULL;  // Return nothing as the result is stored in the passed structure
 }
@@ -292,7 +292,7 @@ void *memcpy_and_submit(void *arg) {
 				// no atomic ctr update from thread -- do it here
 				finalHostOpCtr += 1;
 				if(finalHostOpCtr == expectedHostOps){
-					complete = 1;
+					intermediate_host_ops_complete = 1;
 				}
 			}
 
@@ -319,7 +319,7 @@ void *wait_for_iaa(void *arg) {
             pthread_exit((void *)(intptr_t)rc);
         iaa_tsk_node = iaa_tsk_node->next;
     }
-		while( !complete ){}
+		while( !intermediate_host_ops_complete ){}
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
     pthread_exit((void *)ACCTEST_STATUS_OK);
 }
@@ -331,7 +331,7 @@ void submit_poll_hostop_submit_poll(void *arg){
 	clock_gettime(CLOCK_MONOTONIC, &times[0]);
 	int num_iter = 100;
 	for(int i= 0; i<num_iter; i++){
-		complete = false; /* reset shared synchronization variables */
+		intermediate_host_ops_complete = false; /* reset shared synchronization variables */
 		finalHostOpCtr = 0;
 
 		rc = dsa_memcpy_submit_task_nodes(dsa);
@@ -364,7 +364,7 @@ void submit_poll_hostop_submit_poll(void *arg){
 				// no atomic ctr update from thread -- do it here
 				finalHostOpCtr += 1;
 				if(finalHostOpCtr == expectedHostOps){
-					complete = 1;
+					intermediate_host_ops_complete = 1;
 				}
 			// }
 
@@ -384,7 +384,7 @@ void submit_poll_hostop_submit_poll(void *arg){
             pthread_exit((void *)(intptr_t)rc);
         iaa_tsk_node = iaa_tsk_node->next;
     }
-		while( !complete ){}
+		while( !intermediate_host_ops_complete ){}
 	}
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
     pthread_exit((void *)ACCTEST_STATUS_OK);
@@ -438,7 +438,7 @@ void parallel_host_ops(void *arg){
 				// no atomic ctr update from thread -- do it here
 				// finalHostOpCtr += 1;
 				// if(finalHostOpCtr == expectedHostOps){
-				// 	complete = 1;
+				// 	intermediate_host_ops_complete = 1;
 				// }
 			// }
 
@@ -458,10 +458,47 @@ void parallel_host_ops(void *arg){
             pthread_exit((void *)(intptr_t)rc);
         iaa_tsk_node = iaa_tsk_node->next;
     }
-		while( !complete ){}
+		while( !intermediate_host_ops_complete ){}
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
     pthread_exit((void *)ACCTEST_STATUS_OK);
 
+}
+
+void round_robin_poll(void *arg){
+	/* input is a couple of list of tasks we need to wait on -> we need to service both, polling for responses on each */
+	host_op_args *args;
+	int *(*selected_op)(void *buffer, size_t size) = select_host_op(host_op_sel);
+
+	struct task_node *dsa_tsk_node, *iaa_tsk_node;
+	dsa_tsk_node = dsa->multi_task_node;
+	iaa_tsk_node = iaa->multi_task_node;
+
+	struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
+	struct completion_record *next_iaa_comp = iaa_tsk_node->tsk->comp;
+
+	while(dsa_tsk_node || iaa_tsk_node){
+		if(next_dsa_comp->status){
+			args = malloc(sizeof(host_op_args));
+			if (args == NULL) {
+					pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
+			}
+			args->host_op = selected_op;
+			args->buffer = dsa_tsk_node->tsk->dst1;
+			args->size = buf_size;
+			finalHostOpCtr += 1;
+			if(finalHostOpCtr == expectedHostOps){
+				intermediate_host_ops_complete = 1;
+			}
+			printf("Host op complete:%d\n", finalHostOpCtr);
+			dsa_tsk_node = dsa_tsk_node->next;
+			next_dsa_comp = dsa_tsk_node->tsk->comp;
+		}
+		if(next_iaa_comp->status){
+			printf("IAA op complete:%#lxx\n", iaa_tsk_node->tsk->src1);
+			iaa_tsk_node = iaa_tsk_node->next;
+			next_iaa_comp = iaa_tsk_node->tsk->comp;
+		}
+	}
 }
 
 #include "test_fns.h"
