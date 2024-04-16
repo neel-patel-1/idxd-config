@@ -100,7 +100,7 @@ void iaa_prep_zdecompress32(struct task *tsk)
 
 void iaa_prep_compress(struct task *tsk)
 {
-	info("preparing descriptor for compress\n");
+	// info("preparing descriptor for compress\n");
 
 	acctest_prep_desc_common(tsk->desc, tsk->opcode, (uint64_t)(tsk->dst1),
 				 (uint64_t)(tsk->src1), tsk->xfer_size, tsk->dflags);

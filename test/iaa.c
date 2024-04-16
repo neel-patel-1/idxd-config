@@ -1379,7 +1379,7 @@ int iaa_prep_sub_task_node(struct acctest_context *ctx, struct task_node *tsk_no
 		iaa_prep_compress(tsk_node->tsk);
 	}
 
-	info("Submitted compress job\n");
+	// info("Submitted compress job\n");
 	if (tsk_node) {
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
 	}

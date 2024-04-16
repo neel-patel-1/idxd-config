@@ -656,8 +656,10 @@ int main(int argc, char *argv[])
 			break;
 		case 5:
 			multi_iaa_bandwidth(num_ax, num_desc, buf_size);
+			break;
 		default:
-			printf("Using memcpy and submit\n");
+			printf("No Case\n");
+			exit(-1);
 			break;
 	}
 
