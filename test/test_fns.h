@@ -118,6 +118,7 @@ int single_iaa_test( void *arg){
   init_iaa_task_nodes(iaa, buf_size, tflags, num_desc);
   iaa_tsk_node = iaa->multi_task_node;
 
+  while(!test_started){}
   /* submit */
   while(iaa_tsk_node){
     iaa_prep_sub_task_node(iaa, iaa_tsk_node);
@@ -135,11 +136,13 @@ int single_iaa_test( void *arg){
       }
     }
   }
+  pthread_exit((void *)ACCTEST_STATUS_OK);
 
 }
 
 int multi_iaa_bandwidth(int num_wqs, int num_descs){
   iaa_ax_args *args = malloc(num_wqs * sizeof(iaa_ax_args));
+  pthread_t threads[num_wqs];
   for(int i=0; i<num_wqs; i++){
     args[i].tflags = 0;
     args[i].wq_type = 0;
@@ -147,8 +150,18 @@ int multi_iaa_bandwidth(int num_wqs, int num_descs){
     args[i].wq_id = i;
     args[i].buf_size = 4096;
     args[i].num_desc = num_descs;
+    pthread_create(&(threads[i]),NULL,single_iaa_test,(void *)&(args[i]));
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(i+1, &cpuset);
+    pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
   }
-  single_iaa_test(args);
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+  test_started = 1;
+  for(int i=0; i<num_wqs; i++){
+    pthread_join(threads[i],NULL);
+  }
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
 }
 
