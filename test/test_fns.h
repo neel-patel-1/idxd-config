@@ -49,7 +49,7 @@ int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id,
   }
   while(iaa_tsk_node[num_iaas-1]){
     for(int i=0; i<num_iaas; i++){
-      iaa_wait_compress(iaa[i], iaa_tsk_node[i]);
+      iaa_wait_compress(iaa[i], iaa_tsk_node[i]->tsk);
       iaa_tsk_node[i] = iaa_tsk_node[i]->next;
     }
   }
