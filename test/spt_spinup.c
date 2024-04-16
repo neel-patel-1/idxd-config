@@ -480,7 +480,7 @@ void round_robin_poll(void *arg){
 		reset_test_ctrs();
 
 		while(dsa_tsk_node || iaa_tsk_node){
-			if(next_dsa_comp->status){
+			if(dsa_tsk_node){
 				args = malloc(sizeof(host_op_args));
 				if (args == NULL) {
 						pthread_exit((void *)(intptr_t)ENOMEM);  // Handle memory allocation failure
@@ -494,21 +494,20 @@ void round_robin_poll(void *arg){
 				}
 				printf("Host op complete:%d\n", finalHostOpCtr);
 				dsa_tsk_node = dsa_tsk_node->next;
-				if(dsa_tsk_node){
+				if(dsa_tsk_node)
 					next_dsa_comp = dsa_tsk_node->tsk->comp;
-				}
 			}
-			if(next_iaa_comp->status){
+			if(iaa_tsk_node){
 				printf("IAA op complete:%#lxx\n", iaa_tsk_node->tsk->src1);
 				iaa_tsk_node = iaa_tsk_node->next;
-				next_iaa_comp = iaa_tsk_node->tsk->comp;
-				if(iaa_tsk_node){
+				if(iaa_tsk_node)
 					next_iaa_comp = iaa_tsk_node->tsk->comp;
-				}
 			}
 		}
 		while( !intermediate_host_ops_complete ){}
 	}
+	clock_gettime(CLOCK_MONOTONIC, &times[1]);
+	pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
 #include "test_fns.h"
