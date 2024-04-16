@@ -128,7 +128,7 @@ void iaa_prep_decompress(struct task *tsk)
 
 void iaa_prep_scan(struct task *tsk)
 {
-	info("preparing descriptor for scan\n");
+	// info("preparing descriptor for scan\n");
 
 	acctest_prep_desc_common(tsk->desc, tsk->opcode, (uint64_t)(tsk->dst1),
 				 (uint64_t)(tsk->src1), tsk->xfer_size, tsk->dflags);
@@ -205,7 +205,7 @@ void iaa_prep_extract(struct task *tsk)
 
 void iaa_prep_select(struct task *tsk)
 {
-	info("preparing descriptor for select\n");
+	// info("preparing descriptor for select\n");
 
 	acctest_prep_desc_common(tsk->desc, tsk->opcode, (uint64_t)(tsk->dst1),
 				 (uint64_t)(tsk->src1), tsk->xfer_size, tsk->dflags);

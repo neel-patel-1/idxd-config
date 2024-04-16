@@ -64,6 +64,7 @@ void iaa_prep_decrypto(struct task *tsk);
 int iaa_wait_scan(struct acctest_context *ctx, struct task *tsk);
 int iaa_select_prep_sub_tsk_node(struct acctest_context *ctx, struct task_node *tsk_node);
 int iaa_wait_select(struct acctest_context *ctx, struct task *tsk);
+int iaa_scan_prep_sub_task_node(struct acctest_context *ctx, struct task_node *tsk_node);
 
 int iaa_task_result_verify(struct task *tsk, int mismatch_expected);
 int iaa_task_result_verify_task_nodes(struct acctest_context *ctx, int mismatch_expected);

@@ -67,7 +67,7 @@ static int read_bmp_to_buffer(const char *filepath, void **buffer, size_t *buffe
 
     // Read the bitmap data
     for (int i = 0; i < height; i++) {
-        fread(*buffer + (row_padded * (height - i - 1)), 1, row_padded, file);
+        fread((unsigned char*)*buffer + (row_padded * (height - i - 1)), 1, row_padded, file);
     }
 
     fclose(file);
@@ -113,7 +113,7 @@ static int read_jpeg_to_buffer(const char *filepath, void **buffer, size_t *buff
             ((j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1);
 
         jpeg_read_scanlines(&cinfo, bufferArray, 1);
-        memcpy(*buffer + (row_stride * (cinfo.output_scanline - 1)), bufferArray[0], row_stride);
+        memcpy((unsigned char*)*buffer + (row_stride * (cinfo.output_scanline - 1)), bufferArray[0], row_stride);
     }
 
     // Finish decompression

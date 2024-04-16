@@ -1517,6 +1517,27 @@ int iaa_wait_scan(struct acctest_context *ctx, struct task *tsk)
 	return ACCTEST_STATUS_OK;
 }
 
+int iaa_scan_prep_sub_task_node(struct acctest_context *ctx, struct task_node *tsk_node)
+{
+	int ret = ACCTEST_STATUS_OK;
+
+	if (tsk_node) {
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+
+		tsk_node->tsk->dflags |= IDXD_OP_FLAG_RD_SRC2_AECS;
+		iaa_prep_scan(tsk_node->tsk);
+	}
+
+	// info("Submitted scan job\n");
+	if (tsk_node) {
+		acctest_desc_submit(ctx, tsk_node->tsk->desc);
+	}
+
+	return ret;
+}
+
 int iaa_scan_multi_task_nodes(struct acctest_context *ctx)
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
@@ -1533,7 +1554,7 @@ int iaa_scan_multi_task_nodes(struct acctest_context *ctx)
 		tsk_node = tsk_node->next;
 	}
 
-	info("Submitted all scan jobs\n");
+	// info("Submitted all scan jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
@@ -1820,7 +1841,7 @@ int iaa_select_prep_sub_tsk_node(struct acctest_context *ctx, struct task_node *
 	if (tsk_node) {
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
 	}
-	info("Submitted select job\n");
+	// info("Submitted select job\n");
 
 	return ret;
 }

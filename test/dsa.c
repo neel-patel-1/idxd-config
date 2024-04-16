@@ -810,7 +810,7 @@ int dsa_memcpy_prep_sub_task_node(struct acctest_context *ctx, struct task_node 
 			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
 		acctest_desc_submit(ctx, tsk_node->tsk->desc);
 	}
-	info("Submitted memcpy job\n");
+	// info("Submitted memcpy job\n");
 
 	return ret;
 }
@@ -1565,8 +1565,9 @@ int task_result_verify(struct task *tsk, int mismatch_expected)
 
 	info("verifying task result for %#lx\n", tsk);
 
-	if (tsk->comp->status != DSA_COMP_SUCCESS)
+	if (tsk->comp->status != DSA_COMP_SUCCESS) {
 		return tsk->comp->status;
+	}
 
 	switch (tsk->opcode) {
 	case DSA_OPCODE_MEMMOVE:
@@ -1630,7 +1631,7 @@ int task_result_verify_task_nodes(struct acctest_context *ctx, int mismatch_expe
 	while (tsk_node) {
 		ret = task_result_verify(tsk_node->tsk, mismatch_expected);
 		if (ret != ACCTEST_STATUS_OK) {
-			err("memory result verify failed %d\n", ret);
+			err("memory result verify failed with transfer size %lu and ret %d\n", tsk_node->tsk->xfer_size, ret);
 			return ret;
 		}
 		tsk_node = tsk_node->next;
