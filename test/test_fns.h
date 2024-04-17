@@ -15,6 +15,38 @@ static inline int increment_comp_if_tsk_valid(struct task_node *tsk_node, struct
   }
 }
 
+void read_heavy(void * arg){
+  uint64_t bufSize = (1 << 22);
+  char *lb = (char *)(arg);
+  struct timespec start, end;
+  while(1){
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    for(int i=0; i<bufSize; i++){
+
+      lb[i] = 'a';
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    uint64_t nanos = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
+    printf("Throughput: %ld GB/s\n", (bufSize / nanos));
+  }
+
+}
+
+void busy_wait_spt(void *){
+
+}
+
+int spt_int(int bufSize){
+  uint64_t buf = (uint64_t)malloc(bufSize);
+
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+  pthread_t read_heavy_thread, busy_wait_thread;
+  pthread_create(&read_heavy_thread, NULL, read_heavy, (void *) buf);
+  pthread_join(read_heavy_thread, NULL);
+
+}
+
 
 int multi_iaa_test(int num_iaas, int tflags, int wq_type, int dev_id, int wq_id, size_t buf_size, int num_desc)
 {
@@ -170,6 +202,20 @@ int reset_test_ctrs(){
   finalHostOpCtr = 0;
 }
 
+int dsa_memcpy_poll_task_comps(struct acctest_context *dsa){
+  struct task_node *tsk_node = dsa->multi_task_node;
+  struct completion_record *comp = tsk_node->tsk->comp;
+  while(tsk_node){
+    if(comp->status == DSA_COMP_SUCCESS){
+      tsk_node = tsk_node->next;
+      if(tsk_node){
+        comp = tsk_node->tsk->comp;
+      }
+    }
+  }
+}
+
+
 
 int single_dsa_test( void *arg){
   /* allocate this iaa's task nodes */
@@ -202,22 +248,13 @@ int single_dsa_test( void *arg){
   dsa_tsk_node = dsa->multi_task_node;
 
   while(!test_started){}
-  /* submit */
-  while(dsa_tsk_node){
+  for(int i=0; i<num_iter; i++){
+    /* submit */
     dsa_memcpy_submit_task_nodes(dsa);
-    dsa_tsk_node = dsa_tsk_node->next;
-  }
 
-  /* Reset and poll in order */
-  dsa_tsk_node = dsa->multi_task_node;
-  struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
-  while(dsa_tsk_node){
-    if(next_dsa_comp->status){
-      dsa_tsk_node = dsa_tsk_node->next;
-      if(dsa_tsk_node){
-        next_dsa_comp = dsa_tsk_node->tsk->comp;
-      }
-    }
+
+    /* Reset and poll in order */
+    dsa_memcpy_poll_task_comps(dsa);
   }
   pthread_exit((void *)dsa->multi_task_node);
 
@@ -246,12 +283,12 @@ int multi_dsa_bandwidth(int num_wqs, int num_descs, int buf_size){
     pthread_join(threads[i],&(dsa_tsk_node[i]));
   }
   clock_gettime(CLOCK_MONOTONIC, &times[1]);
+  // while(dsa_tsk_node[0]){
+  //   if( ACCTEST_STATUS_OK != task_result_verify(dsa_tsk_node, num_wqs)){
+  //     error("Task result verification failed");
+  //     return -1;
+  //   }
+  //   dsa_tsk_node[0] = dsa_tsk_node[0]->next;
+  // }
 
-  for(int i=0; i<num_wqs; i++){
-    struct task_node *tsk_node = dsa_tsk_node[i];
-    while(tsk_node){
-      task_result_verify(tsk_node,0);
-      tsk_node = tsk_node->next;
-    }
-  }
 }

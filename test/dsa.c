@@ -1566,7 +1566,7 @@ int task_result_verify(struct task *tsk, int mismatch_expected)
 {
 	int rc;
 
-	info("verifying task result for %#lx\n", tsk);
+	// info("verifying task result for %#lx\n", tsk);
 
 	if (tsk->comp->status != DSA_COMP_SUCCESS)
 		return tsk->comp->status;

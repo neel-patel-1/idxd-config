@@ -658,6 +658,9 @@ int main(int argc, char *argv[])
 		case 6:
 			multi_dsa_bandwidth(num_ax, num_desc, buf_size);
 			break;
+		case 7:
+			spt_int((uint64_t ) (1 << 22));
+			break;
 		default:
 			printf("No Case\n");
 			exit(-1);
