@@ -655,6 +655,9 @@ int main(int argc, char *argv[])
 		case 5:
 			multi_iaa_bandwidth(num_ax, num_desc, buf_size);
 			break;
+		case 6:
+			multi_dsa_bandwidth(num_ax, num_desc, buf_size);
+			break;
 		default:
 			printf("No Case\n");
 			exit(-1);
