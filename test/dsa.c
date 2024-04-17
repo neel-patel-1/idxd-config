@@ -781,7 +781,7 @@ again:
 		err("memcpy desc timeout\n");
 		return ACCTEST_STATUS_TIMEOUT;
 	}
-	
+
 	/* re-submit if PAGE_FAULT reported by HW && BOF is off */
 	if ((stat_val(comp->status) == DSA_COMP_PAGE_FAULT_NOBOF &&
 	     !(desc->flags & IDXD_OP_FLAG_BOF)) ||
@@ -806,7 +806,7 @@ int dsa_memcpy_multi_task_nodes(struct acctest_context *ctx)
 		tsk_node = tsk_node->next;
 	}
 
-	info("Submitted all memcpy jobs\n");
+	// info("Submitted all memcpy jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
 		if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
@@ -842,7 +842,7 @@ int dsa_memcpy_submit_task_nodes(struct acctest_context *ctx)
 		tsk_node = tsk_node->next;
 	}
 
-	info("Submitted all memcpy jobs\n");
+	// info("Submitted all memcpy jobs\n");
 	tsk_node = ctx->multi_task_node;
 	while (tsk_node) {
 		if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)

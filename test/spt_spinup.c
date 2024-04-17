@@ -132,9 +132,7 @@ int stencil(void *buffer, size_t size){
 	return count;
 }
 int shuffle_host_op(void *buffer, size_t size){
-	for(int i=0; i<100; i++){
-		shuffle_elements(buffer, size);
-	}
+	shuffle_elements(buffer, size);
 	return 1;
 }
 
