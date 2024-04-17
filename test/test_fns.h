@@ -33,16 +33,39 @@ void read_heavy(void * arg){
 
 }
 
-void busy_wait_spt(void *){
-
+void busy_wait_spt(void *arg){
+  volatile int *v = malloc(sizeof(int));
+  pthread_mutex_t lock;
+  pthread_mutex_init(&lock, NULL);
+  while(1){
+    if (*v == 0){
+      pthread_mutex_lock(&lock);
+      v++;
+      pthread_mutex_unlock(&lock);
+    }
+  }
 }
 
 int spt_int(int bufSize){
   uint64_t buf = (uint64_t)malloc(bufSize);
+  #define SPT_THREAD 1
+  #define FOREGROUND_THREAD 41
+
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+  CPU_SET(SPT_THREAD, &cpuset);
 
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   pthread_t read_heavy_thread, busy_wait_thread;
+  pthread_create(&busy_wait_thread, NULL, busy_wait_spt, (void *) buf);
+  pthread_setaffinity_np(busy_wait_thread, sizeof(cpu_set_t), &cpuset);
+
+
+  CPU_ZERO(&cpuset);
+  CPU_SET(FOREGROUND_THREAD, &cpuset);
+
   pthread_create(&read_heavy_thread, NULL, read_heavy, (void *) buf);
+  pthread_setaffinity_np(read_heavy_thread, sizeof(cpu_set_t), &cpuset);
   pthread_join(read_heavy_thread, NULL);
 
 }
