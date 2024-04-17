@@ -87,13 +87,13 @@ typedef struct{
   int wq_id;
   size_t buf_size;
   int num_desc;
-} iaa_ax_args;
+} single_submitter_poller_args;
 
 int single_iaa_test( void *arg){
   /* allocate this iaa's task nodes */
   int rc;
   struct acctest_context *iaa;
-  iaa_ax_args *args = (iaa_ax_args *)arg;
+  single_submitter_poller_args *args = (single_submitter_poller_args *)arg;
 
   int tflags = args->tflags;
   int wq_type = args->wq_type;
@@ -141,7 +141,7 @@ int single_iaa_test( void *arg){
 }
 
 int multi_iaa_bandwidth(int num_wqs, int num_descs, int buf_size){
-  iaa_ax_args *args = malloc(num_wqs * sizeof(iaa_ax_args));
+  single_submitter_poller_args *args = malloc(num_wqs * sizeof(single_submitter_poller_args));
   pthread_t threads[num_wqs];
   for(int i=0; i<num_wqs; i++){
     args[i].tflags = 0;
@@ -168,4 +168,90 @@ int multi_iaa_bandwidth(int num_wqs, int num_descs, int buf_size){
 int reset_test_ctrs(){
   intermediate_host_ops_complete = 0;
   finalHostOpCtr = 0;
+}
+
+
+int single_dsa_test( void *arg){
+  /* allocate this iaa's task nodes */
+  int rc;
+  struct acctest_context *dsa;
+  single_submitter_poller_args *args = (single_submitter_poller_args *)arg;
+
+  int tflags = args->tflags;
+  int wq_type = args->wq_type;
+  int dev_id = args->dev_id;
+  int wq_id = args->wq_id;
+  size_t buf_size = args->buf_size;
+  int num_desc = args->num_desc;
+  struct task_node *dsa_tsk_node;
+
+  /* setup */
+  dsa = acctest_init(tflags);
+  dsa->dev_type = ACCFG_DEVICE_DSA;
+  if (!dsa)
+    return -ENOMEM;
+  rc = acctest_alloc(dsa, wq_type, dev_id, wq_id);
+  if (rc < 0){
+    exit(-ENODEV);
+  }
+  if (buf_size > dsa->max_xfer_size) {
+    err("invalid transfer size: %lu\n", buf_size);
+    return -EINVAL;
+  }
+  init_dsa_task_nodes(dsa, buf_size, tflags, num_desc);
+  dsa_tsk_node = dsa->multi_task_node;
+
+  while(!test_started){}
+  /* submit */
+  while(dsa_tsk_node){
+    dsa_memcpy_submit_task_nodes(dsa);
+    dsa_tsk_node = dsa_tsk_node->next;
+  }
+
+  /* Reset and poll in order */
+  dsa_tsk_node = dsa->multi_task_node;
+  struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
+  while(dsa_tsk_node){
+    if(next_dsa_comp->status){
+      dsa_tsk_node = dsa_tsk_node->next;
+      if(dsa_tsk_node){
+        next_dsa_comp = dsa_tsk_node->tsk->comp;
+      }
+    }
+  }
+  pthread_exit((void *)dsa->multi_task_node);
+
+}
+
+int multi_dsa_bandwidth(int num_wqs, int num_descs, int buf_size){
+  single_submitter_poller_args *args = malloc(num_wqs * sizeof(single_submitter_poller_args));
+  pthread_t threads[num_wqs];
+  for(int i=0; i<num_wqs; i++){
+    args[i].tflags = 0;
+    args[i].wq_type = 0;
+    args[i].dev_id = 0;
+    args[i].wq_id = i;
+    args[i].buf_size = buf_size;
+    args[i].num_desc = num_descs;
+    pthread_create(&(threads[i]),NULL,single_dsa_test,(void *)&(args[i]));
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(i+1, &cpuset);
+    pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
+  }
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+  test_started = 1;
+  struct task_node *dsa_tsk_node[num_wqs];
+  for(int i=0; i<num_wqs; i++){
+    pthread_join(threads[i],&(dsa_tsk_node[i]));
+  }
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
+
+  for(int i=0; i<num_wqs; i++){
+    struct task_node *tsk_node = dsa_tsk_node[i];
+    while(tsk_node){
+      task_result_verify(tsk_node,0);
+      tsk_node = tsk_node->next;
+    }
+  }
 }
