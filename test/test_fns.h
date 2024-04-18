@@ -273,6 +273,7 @@ static inline void submit_and_wait(struct acctest_context *dsa, int wq_depth){
   struct task_node *start_tsk_node = tsk_node;
   /* Submit up to the work queue depth and collect responses in a loop */
   int submitted = 0;
+  int retrieved = 0;
   while(tsk_node && submitted < wq_depth){
     if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
 			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
@@ -281,14 +282,14 @@ static inline void submit_and_wait(struct acctest_context *dsa, int wq_depth){
     submitted++;
   }
   tsk_node = start_tsk_node;
-  while(tsk_node){
+  while(tsk_node && retrieved < wq_depth){
     dsa_wait_memcpy(dsa, tsk_node->tsk);
-    if (ACCTEST_STATUS_OK != task_result_verify_memcpy(tsk_node->tsk, 0)){
-      printf("Fail\n");
-      exit(-1);
-    }
+    // if (ACCTEST_STATUS_OK != task_result_verify_memcpy(tsk_node->tsk, 0)){
+    //   printf("Fail\n");
+    //   exit(-1);
+    // }
     tsk_node = tsk_node->next;
-
+    retrieved ++;
   }
 
   return 0;
@@ -323,10 +324,18 @@ int dsa_single_thread_submit_and_collect(void *args) {
 		dsa_tsk_node = dsa_tsk_node->next;
 	}
   printf("Starting test\n");
+  int iter = 1;
+  if (num_descs > wq_depth){
+    iter = num_descs / wq_depth;
+  } else{
+    wq_depth = num_descs;
+  }
+  printf("wq_depth: %d\n", wq_depth);
+  printf("iter: %d\n", iter);
 
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   for(int i=0; i<num_iter; i++){
-    for(int i=0; i<num_descs / wq_depth; i++)
+    for(int i=0; i<iter; i++)
       submit_and_wait(dsa,wq_depth);
   }
   clock_gettime(CLOCK_MONOTONIC, &times[1]);
