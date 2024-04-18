@@ -384,23 +384,24 @@ static int setup_memcpy(void) {
 }
 
 // Note, this uses a single accelerator, -n <num accel> must be 1
-static int sync_all_ops(void) {
+void *sync_all_ops(void *arg) {
+    PThreadArgs *args = (PThreadArgs *)arg;
     struct task_node *scan_tsk_node, *select_tsk_node, *dsa_tsk_node;
     int rc = ACCTEST_STATUS_OK;
     unsigned int seed = (unsigned)time(NULL);
 
-    scan_tsk_node = scan_iaas[0]->multi_task_node;
-    select_tsk_node = select_iaas[0]->multi_task_node;
-    dsa_tsk_node = dsas[0]->multi_task_node;
+    scan_tsk_node = args->scan_iaa->multi_task_node;
+    select_tsk_node = args->select_iaa->multi_task_node;
+    dsa_tsk_node = args->dsa->multi_task_node;
 
     while (scan_tsk_node) {
         // Prep Scan
-        rc = iaa_scan_prep_sub_task_node(scan_iaas[0], scan_tsk_node);
+        rc = iaa_scan_prep_sub_task_node(args->scan_iaa, scan_tsk_node);
         if (rc != ACCTEST_STATUS_OK)
-            return rc;
-        rc = iaa_wait_scan(scan_iaas[0], scan_tsk_node->tsk);
+            pthread_exit((void *)(intptr_t)rc);
+        rc = iaa_wait_scan(args->scan_iaa, scan_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
-            return rc;
+            pthread_exit((void *)(intptr_t)rc);
         
         // Prep select
         select_tsk_node->tsk->src1 = scan_tsk_node->tsk->src1;
@@ -408,12 +409,12 @@ static int sync_all_ops(void) {
 		select_tsk_node->tsk->src2 = scan_tsk_node->tsk->dst1;
 		select_tsk_node->tsk->iaa_num_inputs = (uint32_t)select_tsk_node->tsk->xfer_size / 24;
 		// printf("scan output size: %u\n", scan_tsk_node->tsk->comp->iax_output_size);
-        rc = iaa_select_prep_sub_tsk_node(select_iaas[0], select_tsk_node);
+        rc = iaa_select_prep_sub_tsk_node(args->select_iaa, select_tsk_node);
         if (rc != ACCTEST_STATUS_OK)
-            return rc;
-        rc = iaa_wait_select(select_iaas[0], select_tsk_node->tsk);
+            pthread_exit((void *)(intptr_t)rc);
+        rc = iaa_wait_select(args->select_iaa, select_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
-            return rc;
+            pthread_exit((void *)(intptr_t)rc);
         
         // Perform Shuffle
         shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size, &seed);
@@ -421,14 +422,14 @@ static int sync_all_ops(void) {
         // Prep memcpy
         dsa_tsk_node->tsk->src1 = select_tsk_node->tsk->dst1;
 		dsa_tsk_node->tsk->xfer_size = select_tsk_node->tsk->comp->iax_output_size;
-        rc = dsa_memcpy_prep_sub_task_node(dsas[0], dsa_tsk_node);
+        rc = dsa_memcpy_prep_sub_task_node(args->dsa, dsa_tsk_node);
 		if (rc != ACCTEST_STATUS_OK)
-            return rc;
+            pthread_exit((void *)(intptr_t)rc);
         scan_tsk_node = scan_tsk_node->next;
         select_tsk_node = select_tsk_node->next;
         dsa_tsk_node = dsa_tsk_node->next;
     }
-    return rc;
+    pthread_exit((void *)ACCTEST_STATUS_OK);
 
 }
 
@@ -572,16 +573,13 @@ int main(int argc, char *argv[])
 	// int rc0, rc1, rc2, rc3;
     int is_frag = 0;
     int verify = 0;
-    pthread_t *scanSubmitThreads;
-    pthread_t *scanSelectThreads;
-    pthread_t *selectDsaThreads;
-    pthread_t *memcpyThreads;
-    pthread_t *asyncThreads;
+    pthread_t *scanSubmitThreads, *scanSelectThreads, *selectDsaThreads;
+    pthread_t *memcpyThreads, *asyncThreads, *syncThreads;
     PThreadArgs *scanArgs;
     PThreadArgs *scanSelectArgs;
     PThreadArgs *selectDsaArgs;
     PThreadArgs *memcpyArgs;
-    PThreadArgs *asyncArgs;
+    PThreadArgs *asyncArgs, *syncArgs;
     cpu_set_t cpuset;
     int config = 0;
 
@@ -740,10 +738,19 @@ int main(int argc, char *argv[])
             }
             break;
         case 2:
+            printf("Performing synchronous ops\n");
+            syncThreads = malloc(num_accel * sizeof(pthread_t));
+            syncArgs = malloc(num_accel * sizeof(PThreadArgs));
             clock_gettime(CLOCK_MONOTONIC, &e2e_times[0]);
-            rc = sync_all_ops();
-            if (rc != ACCTEST_STATUS_OK)
-                goto error;
+            for(int i = 0; i < num_accel; i++) {
+                syncArgs[i].scan_iaa = scan_iaas[i];
+                syncArgs[i].select_iaa = select_iaas[i];
+                syncArgs[i].dsa = dsas[i];
+                pthread_create(&syncThreads[i], NULL, sync_all_ops, &syncArgs[i]);
+            }
+            for (int i = 0; i < num_accel; i++) {
+                pthread_join(syncThreads[i], NULL);
+            }
             break;
         default:
             goto error;
