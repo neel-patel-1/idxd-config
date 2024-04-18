@@ -267,9 +267,18 @@ static inline void submit_and_wait(struct acctest_context *dsa){
   return 0;
 }
 
-int single_thread_submit_and_collect(int num_descs, int buf_size, int wq_id){
+typedef struct{
+  int num_descs;
+  int buf_size;
+  int wq_id;
+} test_params;
+
+int single_thread_submit_and_collect(void *arg){
+  test_params *params = (test_params *)arg;
+  int num_descs = params->num_descs, buf_size = params->buf_size, wq_id = params->wq_id;
   struct acctest_context *dsa;
   struct task_node *dsa_tsk_node;
+  struct timespec times[2];
 	int rc = ACCTEST_STATUS_OK;
 	int tflags = 0x1;
   int wq_depth = 32;
@@ -291,8 +300,8 @@ int single_thread_submit_and_collect(int num_descs, int buf_size, int wq_id){
 			return rc;
 		dsa_tsk_node = dsa_tsk_node->next;
 	}
-  printf("Starting test\n");
 
+  while(!test_started){}
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   for(int i=0; i<num_iter; i++){
     for(int i=0; i<num_descs / wq_depth; i++)
@@ -305,4 +314,34 @@ int single_thread_submit_and_collect(int num_descs, int buf_size, int wq_id){
     wq_id, num_descs, buf_size, (double)buf_size * num_descs * num_iter / nanos);
   acctest_free_task(dsa);
   acctest_free(dsa);
+}
+
+int multiple_single_submitter_poller_dsas(){
+  int num_wqs = 4;
+  int num_descs = 1024;
+  int buf_size = 4096;
+  pthread_t threads[num_wqs];
+  test_started = 1;
+  for(int i=0; i< num_wqs; i++){
+    test_params *params = malloc(sizeof(test_params));
+    params->num_descs = num_descs;
+    params->buf_size = buf_size;
+    params->wq_id = i;
+    single_thread_submit_and_collect((void *)params);
+  }
+
+  // for(int i=0; i<num_wqs; i++){
+  //   test_params *params = malloc(sizeof(test_params));
+  //   params->num_descs = num_descs;
+  //   params->buf_size = buf_size;
+  //   params->wq_id = i;
+  //   pthread_create(&(threads[i]),NULL,single_thread_submit_and_collect,(void *)params);
+  //   cpu_set_t cpuset;
+  //   CPU_ZERO(&cpuset);
+  //   CPU_SET(i+1, &cpuset);
+  //   pthread_setaffinity_np(threads[i], sizeof(cpu_set_t), &cpuset);
+  // }
+  // for(int i=0; i<num_wqs; i++){
+  //   pthread_join(threads[i],NULL);
+  // }
 }
