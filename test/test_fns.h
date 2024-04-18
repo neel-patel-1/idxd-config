@@ -259,11 +259,12 @@ int multi_dsa_bandwidth(int num_wqs, int num_descs, int buf_size){
 static inline void submit_and_wait(struct acctest_context *dsa){
   int rc;
   struct task_node *tsk_node = dsa->multi_task_node;
+  dsa_memcpy_submit_task_nodes(dsa);
+
   while(tsk_node){
-    dsa_memcpy_submit_task_nodes(dsa);
+    dsa_wait_memcpy(dsa,tsk_node->tsk);
     tsk_node = tsk_node->next;
   }
-
   return 0;
 }
 
