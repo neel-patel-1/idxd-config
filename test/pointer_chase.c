@@ -12,6 +12,9 @@
 #define MAX_SIZE (1024 * 128)
 #define GRANULARITY 1
 
+// To compile 
+// gcc pointer_chase.c -o pointer_chase -lm -lpthread
+
 volatile int keep_running = 1;
 
 void shuffle_indices(size_t* indices, size_t len) {
