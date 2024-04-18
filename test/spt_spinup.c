@@ -16,6 +16,12 @@
 #include <pthread.h>
 #include <pth.h>
 
+typedef struct {
+    int num_descs;
+    int buf_size;
+    int wq_id;
+} ThreadArgs;
+
 #define DSA_TEST_SIZE 16384
 #define IAA_COMPRESS_AECS_SIZE (1568)
 #define IAA_COMPRESS_SRC2_SIZE (IAA_COMPRESS_AECS_SIZE * 2)
@@ -29,6 +35,7 @@ _Atomic int do_spt_spinup = 0;
 _Atomic int num_iter = 1;
 _Atomic int num_ax = 1;
 _Atomic int test_started = 0;
+_Atomic int active_threads = 0;
 
 
 static struct timespec times[2];
@@ -537,6 +544,9 @@ int main(int argc, char *argv[])
 	int rc0, rc1, rc2;
 	int nKWorkers;
 	long long lat = 0;
+	pthread_t *threads;
+	ThreadArgs *args;
+	int *rt;
 
 	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:k:p:a:")) != -1) {
 		switch (opt) {
@@ -659,7 +669,23 @@ int main(int argc, char *argv[])
 			multi_dsa_bandwidth(num_ax, num_desc, buf_size);
 			break;
 		case 7:
-			single_thread_submit_and_collect(num_desc, buf_size, 0);
+			threads = malloc(num_ax * sizeof(pthread_t));
+			args = malloc(num_ax * sizeof(ThreadArgs));
+			rt = malloc(num_ax * sizeof(int));
+			for (int i = 0; i < num_ax; i++) {
+				args[i].num_descs = num_desc;
+				args[i].buf_size = buf_size;
+				args[i].wq_id = i; 
+
+				if (pthread_create(&threads[i], NULL, dsa_single_thread_submit_and_collect, &args[i])) {
+					fprintf(stderr, "Error creating thread\n");
+					return 1;
+				}
+			}
+
+			for (int i = 0; i < num_ax; i++) {
+				pthread_join(threads[i], (void **)&rt[i]);
+			}
 			break;
 		default:
 			printf("No Case\n");

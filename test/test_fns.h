@@ -294,7 +294,11 @@ static inline void submit_and_wait(struct acctest_context *dsa, int wq_depth){
   return 0;
 }
 
-int single_thread_submit_and_collect(int num_descs, int buf_size, int wq_id){
+int dsa_single_thread_submit_and_collect(void *args) {
+  ThreadArgs *threadArgs = (ThreadArgs *)args;
+  int num_descs = threadArgs->num_descs;
+  int buf_size = threadArgs->buf_size;
+  int wq_id = threadArgs->wq_id;
   struct acctest_context *dsa;
   struct task_node *dsa_tsk_node;
 	int rc = ACCTEST_STATUS_OK;
