@@ -659,7 +659,7 @@ int main(int argc, char *argv[])
 			multi_dsa_bandwidth(num_ax, num_desc, buf_size);
 			break;
 		case 7:
-			single_thread_submit_and_collect(1024, 1024, 0);
+			single_thread_submit_and_collect(num_desc, buf_size, 0);
 			break;
 		default:
 			printf("No Case\n");
@@ -678,8 +678,8 @@ int main(int argc, char *argv[])
 		goto error;
 	// Final verification and cleanup
 
-	printf("Total Latency: %lld ns\n", lat);
-	printf("Throughput: %f\n", (buf_size * num_desc * num_ax)/(double)lat);
+	// printf("Total Latency: %lld ns\n", lat);
+	// printf("Throughput: %f\n", (buf_size * num_desc * num_ax)/(double)lat);
 
 
 
