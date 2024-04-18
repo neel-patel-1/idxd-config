@@ -214,7 +214,6 @@ int single_dsa_poller(void *arg){
     }
 
   }
-  printf("All tasks completed\n");
   complete = 1;
 }
 
@@ -259,16 +258,10 @@ int single_dsa_submitter( void *arg){
       tsk_node = tsk_node->next;
       submittedCtr ++;
     }
+    totalSubmitted += submittedCtr;
     no_free_space[id] = 1;
   }
 
-	// // info("Submitted all memcpy jobs\n");
-	// tsk_node = ctx->multi_task_node;
-
-
-	// return ret;
-
-  dsa_memcpy_submit_task_nodes(ctx);
   while(!complete){}
 }
 
