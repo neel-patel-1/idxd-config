@@ -29,6 +29,7 @@ _Atomic int do_spt_spinup = 0;
 _Atomic int num_iter = 1;
 _Atomic int num_ax = 1;
 _Atomic int test_started = 0;
+_Atomic int complete = 0;
 
 
 static struct timespec times[2];
