@@ -97,6 +97,8 @@ typedef struct{
   int wq_id;
   size_t buf_size;
   int num_desc;
+  int wq_cap;
+  int id;
 } dedicated_args;
 
 int single_iaa_test( void *arg){
@@ -189,6 +191,8 @@ int single_dsa_poller(void *arg){
   int wq_type = args->wq_type;
   int dev_id = args->dev_id;
   int wq_id = args->wq_id;
+  int wq_cap = args->wq_cap;
+  int id = args->id;
   size_t buf_size = args->buf_size;
   int num_desc = args->num_desc;
   struct acctest_context *ctx = args->ctx;
@@ -204,6 +208,10 @@ int single_dsa_poller(void *arg){
         next_dsa_comp = dsa_tsk_node->tsk->comp;
       }
     }
+    if(completedCtr % wq_cap == 0){
+      /* update submitter that there is free space */
+      no_free_space[id] = 0;
+    }
 
   }
   printf("All tasks completed\n");
@@ -212,17 +220,53 @@ int single_dsa_poller(void *arg){
 
 int single_dsa_submitter( void *arg){
    /* allocate this iaa's task nodes */
-  int rc;
   dedicated_args *args = (dedicated_args *)arg;
 
   int tflags = args->tflags;
   int wq_type = args->wq_type;
   int dev_id = args->dev_id;
   int wq_id = args->wq_id;
+  int wq_cap = args->wq_cap;
+  int id = args->id;
   size_t buf_size = args->buf_size;
   int num_desc = args->num_desc;
   struct acctest_context *ctx = args->ctx;
-  struct task_node *dsa_tsk_node = ctx->multi_task_node;
+  struct task_node *tsk_node = ctx->multi_task_node;
+
+	int ret = ACCTEST_STATUS_OK;
+  int totalSubmitted = 0;
+
+  /* submit up to wq depth */
+  while(totalSubmitted < num_desc){
+    int submittedCtr = 0;
+    int preppedCtr = 0;
+
+    while(no_free_space[id]){}
+    struct task_node * n2s = tsk_node;
+    while (preppedCtr < wq_cap) {
+      tsk_node->tsk->dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
+      if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && ctx->bof)
+        tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+      dsa_prep_memcpy(tsk_node->tsk);
+      tsk_node = tsk_node->next;
+      preppedCtr++;
+    }
+    tsk_node = n2s;
+    while (submittedCtr < wq_cap) {
+      if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
+        madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
+      acctest_desc_submit(ctx, tsk_node->tsk->desc);
+      tsk_node = tsk_node->next;
+      submittedCtr ++;
+    }
+    no_free_space[id] = 1;
+  }
+
+	// // info("Submitted all memcpy jobs\n");
+	// tsk_node = ctx->multi_task_node;
+
+
+	// return ret;
 
   dsa_memcpy_submit_task_nodes(ctx);
   while(!complete){}
@@ -264,6 +308,8 @@ int multi_dsa_dedicated_poller_bandwidth(int num_wqs, int num_descs, int buf_siz
     args[i].buf_size = buf_size;
     args[i].num_desc = num_descs;
     args[i].ctx = dsa;
+    args[i].wq_cap = 32;
+    args[i].id = i;
     cpu_set_t cpuset;
 
     pthread_create(&(submitter_threads[i]),NULL,single_dsa_submitter,(void *)&(args[i]));
