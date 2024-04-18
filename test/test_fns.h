@@ -194,21 +194,24 @@ int single_dsa_poller(void *arg){
   struct acctest_context *ctx = args->ctx;
   struct task_node *dsa_tsk_node = ctx->multi_task_node;
   struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
+  int completedCtr = 0;
 
   while(dsa_tsk_node){
     if(next_dsa_comp->status){
-      printf("polled\n");
-      if (ACCTEST_STATUS_OK != task_result_verify(dsa_tsk_node, 0)){
+      if (ACCTEST_STATUS_OK != task_result_verify(dsa_tsk_node->tsk, 0)){
         printf("Error");
         return ACCTEST_STATUS_FAIL;
       }
       dsa_tsk_node = dsa_tsk_node->next;
+      completedCtr++;
       if(dsa_tsk_node){
         next_dsa_comp = dsa_tsk_node->tsk->comp;
       }
+      printf("Completed %d tasks\n",completedCtr);
     }
 
   }
+  printf("All tasks completed\n");
   complete = 1;
 }
 
