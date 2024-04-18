@@ -278,7 +278,7 @@ int single_thread_submit_and_collect(void *arg){
   int num_descs = params->num_descs, buf_size = params->buf_size, wq_id = params->wq_id;
   struct acctest_context *dsa;
   struct task_node *dsa_tsk_node;
-  struct timespec times[2];
+  struct timespec single_thread_time[2];
 	int rc = ACCTEST_STATUS_OK;
 	int tflags = 0x1;
   int wq_depth = 32;
@@ -302,33 +302,38 @@ int single_thread_submit_and_collect(void *arg){
 	}
 
   while(!test_started){}
-  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+  clock_gettime(CLOCK_MONOTONIC, &single_thread_time[0]);
   for(int i=0; i<num_iter; i++){
     for(int i=0; i<num_descs / wq_depth; i++)
       submit_and_wait(dsa);
   }
-  clock_gettime(CLOCK_MONOTONIC, &times[1]);
+  clock_gettime(CLOCK_MONOTONIC, &single_thread_time[1]);
 
-  uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
+  uint64_t nanos = (single_thread_time[1].tv_sec - single_thread_time[0].tv_sec) * 1000000000 + single_thread_time[1].tv_nsec - single_thread_time[0].tv_nsec;
   printf("WQ: %d NumDescs: %d BufSize: %d Throughput: %f GB/s\n",
-    wq_id, num_descs, buf_size, (double)buf_size * num_descs * num_iter / nanos);
+    wq_id, num_descs, buf_size, ((double)buf_size * num_descs * num_iter) / nanos);
   acctest_free_task(dsa);
   acctest_free(dsa);
 }
 
 int multiple_single_submitter_poller_dsas(){
   int num_wqs = 4;
-  int num_descs = 1024;
-  int buf_size = 4096;
+  int num_descs;
   pthread_t threads[num_wqs];
   test_started = 1;
-  for(int i=0; i< num_wqs; i++){
-    test_params *params = malloc(sizeof(test_params));
-    params->num_descs = num_descs;
-    params->buf_size = buf_size;
-    params->wq_id = i;
-    single_thread_submit_and_collect((void *)params);
+  for(int buf_size = 1024 * 1024; buf_size >= 1024; buf_size /= 2){
+    printf("BufSize: %d NumDescs: %d\n", buf_size, num_descs);
+    num_descs = (1024 * 1024) / buf_size;
+    for(int i=0; i< num_wqs; i++){
+      test_params *params = malloc(sizeof(test_params));
+      params->num_descs = num_descs;
+      params->buf_size = buf_size;
+      params->wq_id = i;
+      single_thread_submit_and_collect((void *)params);
+      return;
+    }
   }
+
 
   // for(int i=0; i<num_wqs; i++){
   //   test_params *params = malloc(sizeof(test_params));
