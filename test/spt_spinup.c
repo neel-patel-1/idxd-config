@@ -658,6 +658,10 @@ int main(int argc, char *argv[])
 		case 6:
 			multi_dsa_bandwidth(num_ax, num_desc, buf_size);
 			break;
+		case 7:
+			single_thread_submit_and_collect(1024, 1024 * 1024 / 1024, 0);
+			single_thread_submit_and_collect(512, 1024 * 1024 / 512, 0);
+			break;
 		default:
 			printf("No Case\n");
 			exit(-1);

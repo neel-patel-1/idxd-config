@@ -255,3 +255,54 @@ int multi_dsa_bandwidth(int num_wqs, int num_descs, int buf_size){
     }
   }
 }
+
+static inline void submit_and_wait(struct acctest_context *dsa){
+  int rc;
+  struct task_node *tsk_node = dsa->multi_task_node;
+  while(tsk_node){
+    dsa_memcpy_submit_task_nodes(dsa);
+    tsk_node = tsk_node->next;
+  }
+
+  return 0;
+}
+
+int single_thread_submit_and_collect(int num_descs, int buf_size, int wq_id){
+  struct acctest_context *dsa;
+  struct task_node *dsa_tsk_node;
+	int rc = ACCTEST_STATUS_OK;
+	int tflags = 0x1;
+  int wq_depth = 32;
+
+  dsa = acctest_init(tflags);
+  rc = acctest_alloc(dsa, 0, 0, wq_id);
+  dsa->is_batch = 0;
+  rc = acctest_alloc_multiple_tasks(dsa, wq_depth);
+  if (rc != ACCTEST_STATUS_OK)
+		return rc;
+  printf("Allocated tasks\n");
+
+  dsa_tsk_node = dsa->multi_task_node;
+	while (dsa_tsk_node) {
+		dsa_tsk_node->tsk->xfer_size = buf_size;
+
+		rc = dsa_init_task(dsa_tsk_node->tsk, tflags, DSA_OPCODE_MEMMOVE, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		dsa_tsk_node = dsa_tsk_node->next;
+	}
+  printf("Starting test\n");
+
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+  for(int i=0; i<num_iter; i++){
+    for(int i=0; i<num_descs / wq_depth; i++)
+      submit_and_wait(dsa);
+  }
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
+
+  uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
+  printf("WQ: %d NumDescs: %d BufSize: %d Throughput: %f GB/s\n",
+    wq_id, num_descs, buf_size, (double)buf_size * num_descs * num_iter / nanos);
+  acctest_free_task(dsa);
+  acctest_free(dsa);
+}
