@@ -537,8 +537,9 @@ int main(int argc, char *argv[])
 	int rc0, rc1, rc2;
 	int nKWorkers;
 	long long lat = 0;
+	int busy_wait = 0;
 
-	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:k:p:a:")) != -1) {
+	while ((opt = getopt(argc, argv, "w:l:i:t:n:vh:s:k:p:a:b:")) != -1) {
 		switch (opt) {
 		case 'w':
 			wq_type = atoi(optarg);
@@ -570,6 +571,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'a':
 			num_ax = strtoul(optarg, NULL, 0);
+			break;
+		case 'b':
+			busy_wait = strtoul(optarg, NULL, 0);
 			break;
 		default:
 			break;
@@ -659,7 +663,25 @@ int main(int argc, char *argv[])
 			multi_dsa_bandwidth(num_ax, num_desc, buf_size);
 			break;
 		case 7:
-			spt_int((uint64_t ) (1 << 22));
+			if(busy_wait) {
+				spt_int(0,(uint64_t ) (1 << 22), 1);
+			} else {
+				spt_int(0,(uint64_t ) (1 << 22), 0);
+			}
+			break;
+		case 8:
+			if(busy_wait) {
+				spt_int(1,(uint64_t ) (1 << 22), 1);
+			} else {
+				spt_int(1,(uint64_t ) (1 << 22), 0);
+			}
+			break;
+		case 9:
+			if(busy_wait) {
+				spt_int(2,(uint64_t ) (1 << 22), 1);
+			} else {
+				spt_int(2,(uint64_t ) (1 << 22), 0);
+			}
 			break;
 		default:
 			printf("No Case\n");

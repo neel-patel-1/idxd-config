@@ -1,3 +1,7 @@
+#include <stdatomic.h>
+#define PTR_SIZE sizeof(void*)
+atomic_int keep_running = 1;
+
 static inline int increment_comp_if_tsk_valid(struct task_node *tsk_node, struct completion_record *comp){
   if(tsk_node){
     if(comp->status){
@@ -15,29 +19,128 @@ static inline int increment_comp_if_tsk_valid(struct task_node *tsk_node, struct
   }
 }
 
-void read_heavy(void * arg){
-  uint64_t bufSize = (1 << 22);
-  char *lb = (char *)(arg);
-  struct timespec start, end;
-  while(1){
-    clock_gettime(CLOCK_MONOTONIC, &start);
-
-    for(int i=0; i<bufSize; i++){
-
-      lb[i] = 'a';
+void randomize_indices(size_t* indices, size_t len) {
+    for (size_t i = 0; i < len - 1; i++) {
+        size_t j = i + rand() / (RAND_MAX / (len - i) + 1);
+        size_t temp = indices[i];
+        indices[i] = indices[j];
+        indices[j] = temp;
     }
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    uint64_t nanos = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
-    printf("Throughput: %ld GB/s\n", (bufSize / nanos));
-  }
+}
 
+void** create_random_chain(size_t size) {
+    size_t len = size / PTR_SIZE;
+    void** memory = malloc(len * PTR_SIZE);
+    size_t* indices = malloc(len * sizeof(size_t));
+
+    for (size_t i = 0; i < len; i++) {
+        indices[i] = i;
+    }
+
+    randomize_indices(indices, len);
+
+    for (size_t i = 1; i < len; i++) {
+        memory[indices[i - 1]] = &memory[indices[i]];
+    }
+    memory[indices[len - 1]] = &memory[indices[0]];
+
+    free(indices);
+    return memory;
+}
+
+void pointer_chase(void* arg) {
+    char* lb = (char*)arg;
+    uint64_t bufSize = *((uint64_t*)lb);
+    void** chain = create_random_chain(bufSize);
+
+    struct timespec start, end;
+    uint64_t totalNanos = 0;
+    int iterations = 1000;
+
+    for (int i = 0; i < iterations; i++) {
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        void* ptr = chain[0];
+        for (size_t j = 0; j < bufSize / PTR_SIZE; j++) {
+            ptr = *((void**)ptr);
+        }
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        uint64_t nanos = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
+        totalNanos += nanos;
+    }
+
+    double averageNanos = (double)totalNanos / iterations;
+    double throughput = bufSize / averageNanos; 
+
+    printf("Average Throughput: %.3f GB/s\n", throughput);
+
+    free(chain);
+    atomic_store_explicit(&keep_running, 0, memory_order_release);
+}
+
+void pointer_chase_write_heavy(void* arg) {
+    char* lb = (char*)arg;
+    uint64_t bufSize = *((uint64_t*)lb);
+    void** chain = create_random_chain(bufSize);
+    uint64_t* buf = (uint64_t*)malloc(bufSize);
+
+    struct timespec start, end;
+    uint64_t totalNanos = 0;
+    int iterations = 1000;
+
+    for (int i = 0; i < iterations; i++) {
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        void* ptr = chain[0];
+        for (int j = 0; j < bufSize / PTR_SIZE; j++) {
+            buf[j] = (uint64_t)ptr;
+            ptr = *((void**)ptr);
+        }
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        uint64_t nanos = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
+        totalNanos += nanos;
+    }
+
+    double averageNanos = (double)totalNanos / iterations;
+    double throughput = bufSize / averageNanos; 
+
+    printf("Average Throughput: %.3f GB/s\n", throughput);
+
+    free(chain);
+    atomic_store_explicit(&keep_running, 0, memory_order_release);
+}
+
+void read_heavy(void * arg) {
+    uint64_t bufSize = (1 << 22); // 4MB
+    char *lb = (char *)(arg);
+    struct timespec start, end;
+    uint64_t totalNanos = 0;
+    int iterations = 1000;
+
+    for (int i = 0; i < iterations; i++) {
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
+        for (int j = 0; j < bufSize; j++) {
+            lb[j] = 'a';  // Perform write operation
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        uint64_t nanos = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
+        totalNanos += nanos;
+    }
+
+    double averageNanos = (double)totalNanos / iterations;
+    double throughput = bufSize / averageNanos; // Convert bytes per nanosecond to GB/s
+
+    printf("Average Throughput: %.3f GB/s\n", throughput);
+    atomic_store_explicit(&keep_running, 0, memory_order_release);
 }
 
 void busy_wait_spt(void *arg){
   volatile int *v = malloc(sizeof(int));
   pthread_mutex_t lock;
   pthread_mutex_init(&lock, NULL);
-  while(1){
+  while (atomic_load_explicit(&keep_running, memory_order_acquire)) {
     if (*v == 0){
       pthread_mutex_lock(&lock);
       v++;
@@ -46,28 +149,41 @@ void busy_wait_spt(void *arg){
   }
 }
 
-int spt_int(int bufSize){
+int spt_int(int config, int bufSize, int busy_wait){
   uint64_t buf = (uint64_t)malloc(bufSize);
   #define SPT_THREAD 1
   #define FOREGROUND_THREAD 41
 
   cpu_set_t cpuset;
-  CPU_ZERO(&cpuset);
-  CPU_SET(SPT_THREAD, &cpuset);
+  pthread_t read_heavy_thread, busy_wait_thread;
+  pthread_t pointer_chase_thread, write_heavy_thread;
 
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
-  pthread_t read_heavy_thread, busy_wait_thread;
-  pthread_create(&busy_wait_thread, NULL, busy_wait_spt, (void *) buf);
-  pthread_setaffinity_np(busy_wait_thread, sizeof(cpu_set_t), &cpuset);
-
-
+  if(busy_wait) {
+      CPU_ZERO(&cpuset);
+      CPU_SET(SPT_THREAD, &cpuset);
+      pthread_create(&busy_wait_thread, NULL, busy_wait_spt, (void *) buf);
+      pthread_setaffinity_np(busy_wait_thread, sizeof(cpu_set_t), &cpuset);
+  }
   CPU_ZERO(&cpuset);
   CPU_SET(FOREGROUND_THREAD, &cpuset);
 
-  pthread_create(&read_heavy_thread, NULL, read_heavy, (void *) buf);
-  pthread_setaffinity_np(read_heavy_thread, sizeof(cpu_set_t), &cpuset);
-  pthread_join(read_heavy_thread, NULL);
+  if(config == 0) {
+    pthread_create(&read_heavy_thread, NULL, read_heavy, (void *) buf);
+    pthread_setaffinity_np(read_heavy_thread, sizeof(cpu_set_t), &cpuset);
+    pthread_join(read_heavy_thread, NULL);
+  } else if(config == 1) {
+    pthread_create(&pointer_chase_thread, NULL, (void *)pointer_chase, (void *)&bufSize);
+    pthread_setaffinity_np(pointer_chase_thread, sizeof(cpu_set_t), &cpuset);
+    pthread_join(pointer_chase_thread, NULL);
+  } else if(config == 2) {
+    pthread_create(&write_heavy_thread, NULL, (void *)pointer_chase_write_heavy, (void *)&bufSize);
+    pthread_setaffinity_np(write_heavy_thread, sizeof(cpu_set_t), &cpuset);
+    pthread_join(write_heavy_thread, NULL);
+  }
 
+  pthread_join(busy_wait_thread, NULL);
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
 }
 
 
