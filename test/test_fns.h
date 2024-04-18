@@ -170,6 +170,20 @@ int reset_test_ctrs(){
   finalHostOpCtr = 0;
 }
 
+int single_dsa_poller(){
+  struct task_node *dsa_tsk_node = dsa->multi_task_node;
+  struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
+  while(dsa_tsk_node){
+    if(next_dsa_comp->status){
+      dsa_tsk_node = dsa_tsk_node->next;
+      if(dsa_tsk_node){
+        next_dsa_comp = dsa_tsk_node->tsk->comp;
+      }
+    }
+  }
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
+}
+
 
 int single_dsa_test( void *arg){
   /* allocate this iaa's task nodes */
