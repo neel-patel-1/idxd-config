@@ -256,15 +256,41 @@ int multi_dsa_bandwidth(int num_wqs, int num_descs, int buf_size){
   }
 }
 
-static inline void submit_and_wait(struct acctest_context *dsa){
+static inline void submit_and_wait(struct acctest_context *dsa, int wq_depth){
   int rc;
   struct task_node *tsk_node = dsa->multi_task_node;
-  dsa_memcpy_submit_task_nodes(dsa);
 
-  while(tsk_node){
-    dsa_wait_memcpy(dsa,tsk_node->tsk);
+  /* Prep all task nodes */
+  while (tsk_node) {
+		tsk_node->tsk->dflags = IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR;
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && dsa->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+		dsa_prep_memcpy(tsk_node->tsk);
+		tsk_node = tsk_node->next;
+	}
+
+  tsk_node = dsa->multi_task_node;
+  struct task_node *start_tsk_node = tsk_node;
+  /* Submit up to the work queue depth and collect responses in a loop */
+  int submitted = 0;
+  while(tsk_node && submitted < wq_depth){
+    if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
+			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
+		acctest_desc_submit(dsa, tsk_node->tsk->desc);
     tsk_node = tsk_node->next;
+    submitted++;
   }
+  tsk_node = start_tsk_node;
+  while(tsk_node){
+    dsa_wait_memcpy(dsa, tsk_node->tsk);
+    if (ACCTEST_STATUS_OK != task_result_verify_memcpy(tsk_node->tsk, 0)){
+      printf("Fail\n");
+      exit(-1);
+    }
+    tsk_node = tsk_node->next;
+
+  }
+
   return 0;
 }
 
@@ -297,7 +323,7 @@ int single_thread_submit_and_collect(int num_descs, int buf_size, int wq_id){
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   for(int i=0; i<num_iter; i++){
     for(int i=0; i<num_descs / wq_depth; i++)
-      submit_and_wait(dsa);
+      submit_and_wait(dsa,wq_depth);
   }
   clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
