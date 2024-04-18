@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
     }
 
     int mode = atoi(argv[1]);
-    pthread_t chase_thread, poll_thread;
+    pthread_t chase_thread, poll_thread, iaa_feed;
     size_t memsize = MAX_SIZE;
     pthread_attr_t attr;
     cpu_set_t cpus;
@@ -160,8 +160,15 @@ int main(int argc, char **argv) {
         CPU_ZERO(&cpus);
         CPU_SET(1, &cpus);
         pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
-        pthread_create(&poll_thread, &attr, busy_poll_thread, NULL);
+        pthread_create(&iaa_feed, &attr, feed_iaa, NULL);
+
+        pthread_attr_init(&attr);
+        CPU_ZERO(&cpus);
+        CPU_SET(1, &cpus);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+        pthread_create(&poll_thread, &attr, wait_for_iaa, NULL);
         pthread_join(poll_thread, NULL);
+        pthread_join(iaa_feed, NULL);
     }
 
     pthread_join(chase_thread, NULL);

@@ -13,13 +13,14 @@ check_PROGRAMS =\
 	dsa_test \
 	iaa_test \
 	async_serial \
+	pointer_chase \
 	spt_spinup
 
 if ENABLE_TEST
 testprogdir = $(prefix)/libexec/accel-config/test/
 testprog_DATA = common
 testprog_SCRIPTS = dsa_user_test_runner.sh iaa_user_test_runner.sh dsa_config_test_runner.sh
-testprog_PROGRAMS = dsa_test iaa_test async_serial spt_spinup
+testprog_PROGRAMS = dsa_test iaa_test async_serial spt_spinup pointer_chase
 
 testconfdir = $(testprogdir)/configs/
 testconf_DATA = configs/2g2q_user_1.conf configs/2g2q_user_2.conf
@@ -39,6 +40,7 @@ iaa_test_LDFLAGS = -lz -lcrypto
 dsa_test_LDFLAGS = -lz -lcrypto
 async_serial_LDFLAGS = -lz -lcrypto
 spt_spinup_LDFLAGS = -lz -lcrypto -lpth -lm
+pointer_chase_LDFLAGS = -lz -lcrypto -lpth -lm
 
 libaccfg_SOURCES = libaccfg.c $(testcore)
 libaccfg_LDADD = $(LIBACCFG_LIB) $(UUID_LIBS)
@@ -57,6 +59,11 @@ spt_spinup_SOURCES = spt_spinup.c dsa.c dsa_prep.c iaa.c iaa_prep.c accel_test.c
 		   algorithms/iaa_crc64.c algorithms/iaa_zcompress.c algorithms/iaa_compress.c \
 		   algorithms/iaa_filter.c algorithms/iaa_crypto.c
 spt_spinup_LDADD = $(LIBACCFG_LIB) $(UUID_LIBS)
+
+pointer_chase_SOURCES = pointer_chase.c dsa.c dsa_prep.c iaa.c iaa_prep.c accel_test.c \
+		   algorithms/iaa_crc64.c algorithms/iaa_zcompress.c algorithms/iaa_compress.c \
+		   algorithms/iaa_filter.c algorithms/iaa_crypto.c
+pointer_chase_LDADD = $(LIBACCFG_LIB) $(UUID_LIBS)
 
 iaa_test_SOURCES = iaa_test.c iaa.c iaa_prep.c accel_test.c \
 		   algorithms/iaa_crc64.c algorithms/iaa_zcompress.c algorithms/iaa_compress.c \
