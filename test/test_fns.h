@@ -1,3 +1,5 @@
+#include "algorithms/iaa_compress.h"
+
 static inline int increment_comp_if_tsk_valid(struct task_node *tsk_node, struct completion_record *comp){
   if(tsk_node){
     if(comp->status){
@@ -256,7 +258,7 @@ int multi_dsa_bandwidth(int num_wqs, int num_descs, int buf_size){
   }
 }
 
-static inline void submit_and_wait(struct acctest_context *dsa, int wq_depth){
+static inline void dsa_submit_and_wait(struct acctest_context *dsa, int wq_depth){
   int rc;
   struct task_node *tsk_node = dsa->multi_task_node;
 
@@ -284,6 +286,53 @@ static inline void submit_and_wait(struct acctest_context *dsa, int wq_depth){
   tsk_node = start_tsk_node;
   while(tsk_node && retrieved < wq_depth){
     dsa_wait_memcpy(dsa, tsk_node->tsk);
+    // if (ACCTEST_STATUS_OK != task_result_verify_memcpy(tsk_node->tsk, 0)){
+    //   printf("Fail\n");
+    //   exit(-1);
+    // }
+    tsk_node = tsk_node->next;
+    retrieved ++;
+  }
+
+  return 0;
+}
+
+static inline void iaa_submit_and_wait(struct acctest_context *iaa, int wq_depth){
+  int rc;
+  struct task_node *tsk_node = iaa->multi_task_node;
+
+  /* Prep all task nodes */
+  while (tsk_node) {
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_CRAV | IDXD_OP_FLAG_RCR);
+		if ((tsk_node->tsk->test_flags & TEST_FLAGS_BOF) && iaa->bof)
+			tsk_node->tsk->dflags |= IDXD_OP_FLAG_BOF;
+
+		tsk_node->tsk->dflags |= (IDXD_OP_FLAG_WR_SRC2_CMPL | IDXD_OP_FLAG_RD_SRC2_AECS);
+		tsk_node->tsk->iaa_src2_xfer_size = IAA_COMPRESS_AECS_SIZE;
+
+		memcpy(tsk_node->tsk->src2, (void *)iaa_compress_aecs, IAA_COMPRESS_AECS_SIZE);
+
+		tsk_node->tsk->iaa_compr_flags = (IDXD_COMPRESS_FLAG_EOB_BFINAL |
+						  IDXD_COMPRESS_FLAG_FLUSH_OUTPUT);
+		tsk_node->tsk->iaa_max_dst_size = IAA_COMPRESS_MAX_DEST_SIZE;
+
+		iaa_prep_compress(tsk_node->tsk);
+		tsk_node = tsk_node->next;
+	}
+
+  tsk_node = iaa->multi_task_node;
+  struct task_node *start_tsk_node = tsk_node;
+  /* Submit up to the work queue depth and collect responses in a loop */
+  int submitted = 0;
+  int retrieved = 0;
+  while(tsk_node && submitted < wq_depth){
+		acctest_desc_submit(iaa, tsk_node->tsk->desc);
+    tsk_node = tsk_node->next;
+    submitted++;
+  }
+  tsk_node = start_tsk_node;
+  while(tsk_node && retrieved < wq_depth){
+    iaa_wait_compress(iaa, tsk_node->tsk);
     // if (ACCTEST_STATUS_OK != task_result_verify_memcpy(tsk_node->tsk, 0)){
     //   printf("Fail\n");
     //   exit(-1);
@@ -336,7 +385,7 @@ int dsa_single_thread_submit_and_collect(void *args) {
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   for(int i=0; i<num_iter; i++){
     for(int i=0; i<iter; i++)
-      submit_and_wait(dsa,wq_depth);
+      dsa_submit_and_wait(dsa,wq_depth);
   }
   clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
@@ -345,4 +394,61 @@ int dsa_single_thread_submit_and_collect(void *args) {
     wq_id, num_descs, buf_size, (double)buf_size * num_descs * num_iter / nanos);
   acctest_free_task(dsa);
   acctest_free(dsa);
+}
+
+int iaa_single_thread_submit_and_collect(void *args) {
+  ThreadArgs *threadArgs = (ThreadArgs *)args;
+  int num_descs = threadArgs->num_descs;
+  int buf_size = threadArgs->buf_size;
+  int wq_id = threadArgs->wq_id;
+  struct acctest_context *iaa;
+  struct task_node *iaa_tsk_node;
+	int rc = ACCTEST_STATUS_OK;
+	int tflags = 0x1;
+  int wq_depth = 32;
+  int wq_type = DEDICATED;
+  int dev_id = 1;
+
+  iaa = acctest_init(tflags);
+  iaa->dev_type = ACCFG_DEVICE_IAX;
+  if (!iaa)
+		return -ENOMEM;
+  rc = acctest_alloc(iaa, wq_type, dev_id, wq_id);
+  if (rc < 0)
+		return -ENOMEM;
+  rc = acctest_alloc_multiple_tasks(iaa, wq_depth);
+  if (rc != ACCTEST_STATUS_OK)
+		return rc;
+  printf("Allocated tasks\n");
+
+  iaa_tsk_node = iaa->multi_task_node;
+	while (iaa_tsk_node) {
+		iaa_tsk_node->tsk->iaa_compr_flags = 0;
+		rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		iaa_tsk_node = iaa_tsk_node->next;
+	}
+  printf("Starting test\n");
+
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+  int iter = 1;
+  if (num_descs > wq_depth){
+    iter = num_descs / wq_depth;
+  } else{
+    wq_depth = num_descs;
+  }
+  printf("wq_depth: %d\n", wq_depth);
+  printf("iter: %d\n", iter);
+  for(int i=0; i<num_iter; i++){
+    for(int i=0; i<num_descs / wq_depth; i++)
+      iaa_submit_and_wait(iaa,wq_depth);
+  }
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
+
+  uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
+  printf("WQ: %d NumDescs: %d BufSize: %d Throughput: %f GB/s\n",
+    wq_id, num_descs, buf_size, (double)buf_size * num_descs * num_iter / nanos);
+  acctest_free_task(iaa);
+  acctest_free(iaa);
 }

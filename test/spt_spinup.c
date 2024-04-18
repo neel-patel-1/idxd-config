@@ -687,6 +687,25 @@ int main(int argc, char *argv[])
 				pthread_join(threads[i], (void **)&rt[i]);
 			}
 			break;
+		case 8:
+			threads = malloc(num_ax * sizeof(pthread_t));
+			args = malloc(num_ax * sizeof(ThreadArgs));
+			rt = malloc(num_ax * sizeof(int));
+			for (int i = 0; i < num_ax; i++) {
+				args[i].num_descs = num_desc;
+				args[i].buf_size = buf_size;
+				args[i].wq_id = i; 
+
+				if (pthread_create(&threads[i], NULL, iaa_single_thread_submit_and_collect, &args[i])) {
+					fprintf(stderr, "Error creating thread\n");
+					return 1;
+				}
+			}
+
+			for (int i = 0; i < num_ax; i++) {
+				pthread_join(threads[i], (void **)&rt[i]);
+			}
+			break;
 		default:
 			printf("No Case\n");
 			exit(-1);
