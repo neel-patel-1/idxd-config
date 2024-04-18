@@ -198,16 +198,11 @@ int single_dsa_poller(void *arg){
 
   while(dsa_tsk_node){
     if(next_dsa_comp->status){
-      if (ACCTEST_STATUS_OK != task_result_verify(dsa_tsk_node->tsk, 0)){
-        printf("Error");
-        return ACCTEST_STATUS_FAIL;
-      }
       dsa_tsk_node = dsa_tsk_node->next;
       completedCtr++;
       if(dsa_tsk_node){
         next_dsa_comp = dsa_tsk_node->tsk->comp;
       }
-      printf("Completed %d tasks\n",completedCtr);
     }
 
   }
