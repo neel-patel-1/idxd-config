@@ -25,6 +25,7 @@ sles/accfg.spec
 test/dsa_test
 test/iaa_test
 test/libaccfg
+test/images2
 util/log.lo
 util/sysfs.lo
 version.m4
