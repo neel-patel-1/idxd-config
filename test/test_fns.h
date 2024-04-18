@@ -170,8 +170,8 @@ int reset_test_ctrs(){
   finalHostOpCtr = 0;
 }
 
-int single_dsa_poller(){
-  struct task_node *dsa_tsk_node = dsa->multi_task_node;
+int single_dsa_poller(struct task_node * dsa_tsk_node){
+  /* generate a full queue length set of tasks */
   struct completion_record *next_dsa_comp = dsa_tsk_node->tsk->comp;
   while(dsa_tsk_node){
     if(next_dsa_comp->status){
@@ -180,8 +180,67 @@ int single_dsa_poller(){
         next_dsa_comp = dsa_tsk_node->tsk->comp;
       }
     }
+    if (ACCTEST_STATUS_OK != task_result_verify(dsa_tsk_node, 0)){
+      printf("Error");
+      return ACCTEST_STATUS_FAIL;
+    }
   }
-  clock_gettime(CLOCK_MONOTONIC, &times[1]);
+}
+
+int single_dsa_submitter( void *arg){
+   /* allocate this iaa's task nodes */
+  int rc;
+  struct acctest_context *dsa;
+  single_submitter_poller_args *args = (single_submitter_poller_args *)arg;
+
+  int tflags = args->tflags;
+  int wq_type = args->wq_type;
+  int dev_id = args->dev_id;
+  int wq_id = args->wq_id;
+  size_t buf_size = args->buf_size;
+  int num_desc = args->num_desc;
+  struct task_node *dsa_tsk_node;
+
+  /* setup */
+  dsa = acctest_init(tflags);
+  dsa->dev_type = ACCFG_DEVICE_DSA;
+  if (!dsa)
+    return -ENOMEM;
+  rc = acctest_alloc(dsa, wq_type, dev_id, wq_id);
+  if (rc < 0){
+    exit(-ENODEV);
+  }
+  if (buf_size > dsa->max_xfer_size) {
+    err("invalid transfer size: %lu\n", buf_size);
+    return -EINVAL;
+  }
+  init_dsa_task_nodes(dsa, buf_size, tflags, num_desc);
+  dsa_tsk_node = dsa->multi_task_node;
+}
+
+int multi_dsa_dedicated_poller_bandwidth(int num_wqs, int num_descs, int buf_size){
+  single_submitter_poller_args *args = malloc(num_wqs * sizeof(single_submitter_poller_args));
+  pthread_t submitter_threads[num_wqs];
+  pthread_t poller_threads[num_wqs];
+  for(int i=0; i<num_wqs; i++){
+    args[i].tflags = 0;
+    args[i].wq_type = 0;
+    args[i].dev_id = 0;
+    args[i].wq_id = i;
+    args[i].buf_size = buf_size;
+    args[i].num_desc = num_descs;
+    cpu_set_t cpuset;
+
+    pthread_create(&(submitter_threads[i]),NULL,single_dsa_submitter,(void *)&(args[i]));
+    pthread_setaffinity_np(submitter_threads[i], sizeof(cpu_set_t), &cpuset);
+    CPU_ZERO(&cpuset);
+    CPU_SET(i+1, &cpuset);
+
+    pthread_create(&(poller_threads[i]), NULL, single_dsa_poller, (void *)&(args[i]));
+    pthread_setaffinity_np(poller_threads[i], sizeof(cpu_set_t), &cpuset);
+    CPU_ZERO(&cpuset);
+    CPU_SET(i+1, &cpuset);
+  }
 }
 
 
