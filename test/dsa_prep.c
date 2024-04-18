@@ -57,7 +57,7 @@ void dsa_reprep_batch(struct batch_task *btsk, struct acctest_context *ctx)
 
 void dsa_prep_memcpy(struct task *tsk)
 {
-	info("preparing descriptor for memcpy\n");
+	// info("preparing descriptor for memcpy\n");
 
 	if (tsk->opcode == DSA_OPCODE_DRAIN)
 		tsk->opcode = DSA_OPCODE_MEMMOVE;
