@@ -16,6 +16,7 @@
         "user.h": "c",
         "stdio.h": "c",
         "mman.h": "c",
-        "util.h": "c"
+        "util.h": "c",
+        "time.h": "c"
     }
 }

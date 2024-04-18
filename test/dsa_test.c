@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
 			if (rc != ACCTEST_STATUS_OK)
 				goto error;
 			clock_gettime(CLOCK_MONOTONIC, &times[0]);
-			shuffle_elements(memcpy_src1, memcpy_size);
+			// shuffle_elements(memcpy_src1, memcpy_size);
 			clock_gettime(CLOCK_MONOTONIC, &times[1]);
 			shuffle_lat += (times[1].tv_sec - times[0].tv_sec) + 
                      (times[1].tv_nsec - times[0].tv_nsec) / 1000000000.0;

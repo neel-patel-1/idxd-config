@@ -15,6 +15,7 @@
 #include <jpeglib.h>
 #include "util.h"
 #include <dirent.h>
+#include <sched.h>
 
 #define DSA_MEMCPY_MAX_DEST_SIZE (2097152 * 2)
 
@@ -231,7 +232,6 @@ static int setup_fragmented_scan(void) {
     int tflags = 0x1;
     int extra_flags_2 = 0x5c;
     int rc;
-    struct task_node *current_node;
     uint64_t num_frags;
     uint64_t frag_start, frag_end;
     void *buffer;
@@ -387,6 +387,7 @@ static int setup_memcpy(void) {
 static int sync_all_ops(void) {
     struct task_node *scan_tsk_node, *select_tsk_node, *dsa_tsk_node;
     int rc = ACCTEST_STATUS_OK;
+    unsigned int seed = (unsigned)time(NULL);
 
     scan_tsk_node = scan_iaas[0]->multi_task_node;
     select_tsk_node = select_iaas[0]->multi_task_node;
@@ -415,7 +416,7 @@ static int sync_all_ops(void) {
             return rc;
         
         // Perform Shuffle
-        shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size);
+        shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size, &seed);
 		
         // Prep memcpy
         dsa_tsk_node->tsk->src1 = select_tsk_node->tsk->dst1;
@@ -435,6 +436,7 @@ void *async_thread(void *arg) {
     PThreadArgs *args = (PThreadArgs *)arg;
     struct task_node *scan_tsk_node, *select_tsk_node;
     struct task_node *dsa_tsk_node;
+    unsigned int seed = time(NULL) + pthread_self();
     int rc = iaa_scan_multi_task_nodes(args->scan_iaa);
     if (rc != ACCTEST_STATUS_OK)
         pthread_exit((void *)(intptr_t)rc);
@@ -461,7 +463,7 @@ void *async_thread(void *arg) {
         rc = iaa_wait_select(args->select_iaa, select_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
             pthread_exit((void *)(intptr_t)rc);
-        shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size);
+        shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size, &seed);
         dsa_tsk_node->tsk->src1 = select_tsk_node->tsk->dst1;
         dsa_tsk_node->tsk->xfer_size = select_tsk_node->tsk->comp->iax_output_size;
         rc = dsa_memcpy_prep_sub_task_node(args->dsa, dsa_tsk_node);
@@ -518,13 +520,14 @@ void *select_wait_memcpy_submit(void *arg) {
     PThreadArgs *args = (PThreadArgs *)arg;
     struct task_node *select_tsk_node = args->select_iaa->multi_task_node;
     struct task_node *dsa_tsk_node = args->dsa->multi_task_node;
+    unsigned int seed = time(NULL) + pthread_self();
     int rc;
 
     while (select_tsk_node) {
         rc = iaa_wait_select(args->select_iaa, select_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
             pthread_exit((void *)(intptr_t)rc);
-        shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size);
+        shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size, &seed);
         dsa_tsk_node->tsk->src1 = select_tsk_node->tsk->dst1;
         dsa_tsk_node->tsk->xfer_size = select_tsk_node->tsk->comp->iax_output_size;
         rc = dsa_memcpy_prep_sub_task_node(args->dsa, dsa_tsk_node);
@@ -579,6 +582,7 @@ int main(int argc, char *argv[])
     PThreadArgs *selectDsaArgs;
     PThreadArgs *memcpyArgs;
     PThreadArgs *asyncArgs;
+    cpu_set_t cpuset;
     int config = 0;
 
 	while ((opt = getopt(argc, argv, "w:i:t:s:a:c:fvh")) != -1) {
@@ -703,6 +707,11 @@ int main(int argc, char *argv[])
                 selectDsaArgs[i].select_iaa = select_iaas[i];
                 selectDsaArgs[i].dsa = dsas[i];
                 pthread_create(&selectDsaThreads[i], NULL, select_wait_memcpy_submit, &selectDsaArgs[i]);
+
+                CPU_ZERO(&cpuset); 
+                CPU_SET(i, &cpuset);  
+
+                pthread_setaffinity_np(selectDsaThreads[i], sizeof(cpu_set_t), &cpuset);
 
                 memcpyArgs[i].dsa = dsas[i];
                 pthread_create(&memcpyThreads[i], NULL, memcpy_wait, &memcpyArgs[i]);

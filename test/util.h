@@ -124,13 +124,12 @@ static int read_jpeg_to_buffer(const char *filepath, void **buffer, size_t *buff
     return ACCTEST_STATUS_OK;
 }
 
-static void shuffle_elements(void *array, size_t size) {
+static void shuffle_elements(void *array, size_t size, unsigned int *seed) {
     uint32_t *arr = (uint32_t *)array;
     size_t n = size / sizeof(uint32_t); // Number of elements
     if (n > 1) {
-        srand((unsigned)time(NULL)); // Seed the random number generator
         for (size_t i = n - 1; i > 0; i--) {
-            size_t j = rand() % (i + 1); // Random index from 0 to i
+            size_t j = rand_r(seed) % (i + 1);
             // Swap arr[i] and arr[j]
             uint32_t tmp = arr[i];
             arr[i] = arr[j];

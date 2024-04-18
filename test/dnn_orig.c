@@ -364,7 +364,7 @@ static int sync_all_ops(void) {
             return rc;
         
         // Perform Shuffle
-        shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size);
+        // shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size);
 		
         // Prep memcpy
         dsa_tsk_node->tsk->src1 = select_tsk_node->tsk->dst1;
@@ -431,7 +431,7 @@ void *select_wait_memcpy_submit(void *arg) {
         rc = iaa_wait_select(select_iaa, select_tsk_node->tsk);
         if (rc != ACCTEST_STATUS_OK)
             pthread_exit((void *)(intptr_t)rc);
-		shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size);
+		// shuffle_elements(select_tsk_node->tsk->dst1, select_tsk_node->tsk->comp->iax_output_size);
 		dsa_tsk_node->tsk->src1 = select_tsk_node->tsk->dst1;
 		dsa_tsk_node->tsk->xfer_size = select_tsk_node->tsk->comp->iax_output_size;
         rc = dsa_memcpy_prep_sub_task_node(dsa, dsa_tsk_node);
