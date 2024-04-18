@@ -7,12 +7,15 @@
 #include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
+#include "iaa.h"
 
 #define MIN_SIZE 1024
 #define MAX_SIZE (1024 * 128)
 #define GRANULARITY 1
 
-// To compile 
+struct acctest_context * iaa;
+
+// To compile
 // gcc pointer_chase.c -o pointer_chase -lm -lpthread
 
 volatile int keep_running = 1;
@@ -89,6 +92,49 @@ void* busy_poll_thread(void* arg) {
     printf("Busy polling thread exiting...\n");
     return NULL;
 }
+
+void *wait_for_iaa(void *arg) {
+    struct task_node *iaa_tsk_node = iaa->multi_task_node;
+    int rc;
+
+    while(iaa_tsk_node) {
+        rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
+        if (rc != ACCTEST_STATUS_OK)
+            pthread_exit((void *)(intptr_t)rc);
+        iaa_tsk_node = iaa_tsk_node->next;
+    }
+
+    pthread_exit((void *)ACCTEST_STATUS_OK);
+}
+
+void feed_iaa(void *arg){
+    int tflags = 0x1;
+    int buf_size = 4096;
+    struct task_node *iaa_tsk_node;
+    int rc = acctest_alloc_multiple_tasks(iaa, 1024);
+	if (rc != ACCTEST_STATUS_OK)
+		return rc;
+
+    iaa_tsk_node = iaa->multi_task_node;
+    while(1){
+        while (iaa_tsk_node) {
+            if (rc != ACCTEST_STATUS_OK)
+                return rc;
+            rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
+            if (rc != ACCTEST_STATUS_OK)
+                return rc;
+            iaa_tsk_node = iaa_tsk_node->next;
+        }
+        while(iaa_tsk_node){
+            iaa_tsk_node->tsk->src1 = malloc(4096);
+            iaa_prep_sub_task_node(iaa, iaa_tsk_node);
+            iaa_tsk_node = iaa_tsk_node->next;
+        }
+        iaa_tsk_node = iaa->multi_task_node;
+    }
+}
+
+
 
 int main(int argc, char **argv) {
     if (argc != 2) {
