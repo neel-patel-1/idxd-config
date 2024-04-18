@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
     int mode = atoi(argv[1]);
     pthread_t chase_thread, poll_thread;
-    size_t memsize = MAX_SIZE;  // Define this appropriately
+    size_t memsize = MAX_SIZE;
     pthread_attr_t attr;
     cpu_set_t cpus;
 
