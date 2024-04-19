@@ -12,4 +12,4 @@ for i in "${SIZES[@]}"; do
   ctr=$((ctr+1))
 done
 
-for i in $( ls -1 dsa.log.* | sort -V); do echo $i; awk '/GB/{sum+=$8} END{print sum}' $i; done
+for i in $( ls -1 dsa.log.* | sort -V); do echo $i; awk '/GB/{sum+=$8} END{print sum}' $i; done | grep -v dsa
