@@ -5,11 +5,11 @@ AXS=(4 4 4 4 4 4 4 4 4 1 1)
 ctr=0
 for i in "${SIZES[@]}"; do
   echo "sudo .//spt_spinup -t8 -a${AXS[$ctr]} -n4 -p $i -n ${DESCS[$ctr]} -i100 | tee -a iaa.log"
-  sudo .//spt_spinup -t7 -a${AXS[$ctr]} -n4 -p $i -n ${DESCS[$ctr]} -i100 | tee iaa.log.$i
+  sudo .//spt_spinup -t8 -a${AXS[$ctr]} -n4 -p $i -n ${DESCS[$ctr]} -i100 | tee iaa.log.$i
   while [ "$( grep Failed iaa.log.$i )" ]; do
-   sudo .//spt_spinup -t7 -a${AXS[$ctr]} -n4 -p $i -n ${DESCS[$ctr]} -i100 | tee iaa.log.$i
+   sudo .//spt_spinup -t8 -a${AXS[$ctr]} -n4 -p $i -n ${DESCS[$ctr]} -i100 | tee iaa.log.$i
   done
   ctr=$((ctr+1))
 done
 
-for i in $( ls -1 iaa.log.* | sort -V); do echo $i; awk '/GB/{sum+=$8} END{print sum}' $i; done
+for i in $( ls -1 iaa.log.* | sort -V); do echo $i; awk '/GB/{sum+=$8} END{print sum}' $i; done | grep -v iaa
