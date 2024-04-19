@@ -689,6 +689,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 		case 8:
+			pthread_barrier_init(&barrier, NULL, num_ax);
 			threads = malloc(num_ax * sizeof(pthread_t));
 			args = malloc(num_ax * sizeof(ThreadArgs));
 			rt = malloc(num_ax * sizeof(int));

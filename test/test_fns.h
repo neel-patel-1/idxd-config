@@ -438,15 +438,16 @@ int iaa_single_thread_submit_and_collect(void *args) {
 	}
   printf("Starting test\n");
 
-  clock_gettime(CLOCK_MONOTONIC, &times[0]);
   int iter = 1;
   if (num_descs > wq_depth){
     iter = num_descs / wq_depth;
   } else{
     wq_depth = num_descs;
   }
-  printf("wq_depth: %d\n", wq_depth);
-  printf("iter: %d\n", iter);
+
+  pthread_barrier_wait(&barrier);
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+
   for(int i=0; i<num_iter; i++){
     for(int i=0; i<num_descs / wq_depth; i++)
       iaa_submit_and_wait(iaa,wq_depth);
