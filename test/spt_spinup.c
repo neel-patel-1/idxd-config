@@ -669,13 +669,14 @@ int main(int argc, char *argv[])
 			multi_dsa_bandwidth(num_ax, num_desc, buf_size);
 			break;
 		case 7:
+			pthread_barrier_init(&barrier, NULL, num_ax);
 			threads = malloc(num_ax * sizeof(pthread_t));
 			args = malloc(num_ax * sizeof(ThreadArgs));
 			rt = malloc(num_ax * sizeof(int));
 			for (int i = 0; i < num_ax; i++) {
 				args[i].num_descs = num_desc;
 				args[i].buf_size = buf_size;
-				args[i].wq_id = i; 
+				args[i].wq_id = i;
 
 				if (pthread_create(&threads[i], NULL, dsa_single_thread_submit_and_collect, &args[i])) {
 					fprintf(stderr, "Error creating thread\n");
@@ -694,7 +695,7 @@ int main(int argc, char *argv[])
 			for (int i = 0; i < num_ax; i++) {
 				args[i].num_descs = num_desc;
 				args[i].buf_size = buf_size;
-				args[i].wq_id = i; 
+				args[i].wq_id = i;
 
 				if (pthread_create(&threads[i], NULL, iaa_single_thread_submit_and_collect, &args[i])) {
 					fprintf(stderr, "Error creating thread\n");

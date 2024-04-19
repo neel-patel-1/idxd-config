@@ -257,7 +257,7 @@ int multi_dsa_bandwidth(int num_wqs, int num_descs, int buf_size){
     }
   }
 }
-
+pthread_barrier_t barrier;
 static inline void dsa_submit_and_wait(struct acctest_context *dsa, int wq_depth){
   int rc;
   struct task_node *tsk_node = dsa->multi_task_node;
@@ -273,6 +273,8 @@ static inline void dsa_submit_and_wait(struct acctest_context *dsa, int wq_depth
 
   tsk_node = dsa->multi_task_node;
   struct task_node *start_tsk_node = tsk_node;
+
+
   /* Submit up to the work queue depth and collect responses in a loop */
   int submitted = 0;
   int retrieved = 0;
@@ -386,6 +388,7 @@ int dsa_single_thread_submit_and_collect(void *args) {
   printf("wq_depth: %d\n", wq_depth);
   printf("iter: %d\n", iter);
 
+  pthread_barrier_wait(&barrier);
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   for(int i=0; i<num_iter; i++){
     for(int i=0; i<iter; i++)
