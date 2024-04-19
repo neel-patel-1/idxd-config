@@ -234,10 +234,10 @@ static int init_compress(struct task *tsk, int tflags, int opcode, unsigned long
 	tsk->test_flags = tflags;
 	tsk->xfer_size = src1_xfer_size;
 
-	// tsk->src1 = aligned_alloc(32, src1_xfer_size);
-	// if (!tsk->src1)
-	// 	return -ENOMEM;
-	// memset_pattern(tsk->src1, tsk->pattern, src1_xfer_size);
+	tsk->src1 = aligned_alloc(32, src1_xfer_size);
+	if (!tsk->src1)
+		return -ENOMEM;
+	memset_pattern(tsk->src1, tsk->pattern, src1_xfer_size);
 
 	tsk->src2 = aligned_alloc(32, IAA_COMPRESS_SRC2_SIZE);
 	if (!tsk->src2)

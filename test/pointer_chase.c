@@ -14,6 +14,7 @@
 #define GRANULARITY 1
 
 struct acctest_context * iaa;
+int num_desc = 100000;
 
 // To compile
 // gcc pointer_chase.c -o pointer_chase -lm -lpthread
@@ -59,28 +60,26 @@ void** create_random_chain(size_t size) {
     return memory;
 }
 
-double chase_pointers(void** memory, size_t count) {
-    clock_t start, end;
-    start = clock();
+void chase_pointers(void** memory, size_t count) {
     void* ptr = memory[0];
     for (size_t i = 0; i < count; i++) {
         ptr = *(void**)ptr;
     }
-    end = clock();
-    return (double)(end - start) / CLOCKS_PER_SEC;
 }
 
 void* pointer_chase_thread(void* arg) {
+    struct timespec times[2];
     size_t memsize = *(size_t*)arg;
     void** memory = create_random_chain(memsize);
     size_t count = fmax(memsize * 16, (size_t)1<<30);
     printf("Starting chase pointers\n");
 
     while(1){
-        double t = chase_pointers(memory, count);
-        double ns = t * 1000000000 / count;
-        printf(" %9zu  %10.5lf ns\n", memsize, ns);
-        fflush(stdout);
+        clock_gettime(CLOCK_MONOTONIC, &times[0]);
+        chase_pointers(memory, count);
+        clock_gettime(CLOCK_MONOTONIC, &times[1]);
+        uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
+        printf("nanos: %u\n", nanos);
     }
 
     keep_running = 0;
@@ -99,49 +98,60 @@ void *wait_for_iaa(void *arg) {
     struct task_node *iaa_tsk_node = iaa->multi_task_node;
     int rc;
 
-    while (1){
+    // while (1){
         iaa_tsk_node = iaa->multi_task_node;
         while(iaa_tsk_node) {
+            // printf("Waiting...\n");
             rc = iaa_wait_compress(iaa, iaa_tsk_node->tsk);
             if (rc != ACCTEST_STATUS_OK)
                 pthread_exit((void *)(intptr_t)rc);
             iaa_tsk_node = iaa_tsk_node->next;
         }
-    }
-
+    // }
 
     pthread_exit((void *)ACCTEST_STATUS_OK);
 }
 
 void feed_iaa(void *arg){
-    int tflags = 0x1;
     int buf_size = 4096;
     struct task_node *iaa_tsk_node;
-    iaa = acctest_init(0x1);
-    int rc = acctest_alloc(iaa, 0, 1, 0);
-    rc = acctest_alloc_multiple_tasks(iaa, 1024);
-	if (rc != ACCTEST_STATUS_OK)
-		return rc;
+	int rc = ACCTEST_STATUS_OK;
+	int tflags = 0x1;
+    int wq_type = SHARED;
+    int wq_id = 0;
+    int dev_id = 3;
+    
+    iaa = acctest_init(tflags);
+    iaa->dev_type = ACCFG_DEVICE_IAX;
+    if (!iaa)
+        return -ENOMEM;
+    rc = acctest_alloc(iaa, wq_type, dev_id, wq_id);
+    if (rc < 0)
+            return -ENOMEM;
+
+    rc = acctest_alloc_multiple_tasks(iaa, num_desc);
+    if (rc != ACCTEST_STATUS_OK)
+        return rc;
+    printf("Allocated tasks\n");
 
     iaa_tsk_node = iaa->multi_task_node;
-    while (iaa_tsk_node) {
-        if (rc != ACCTEST_STATUS_OK)
-            return rc;
-        rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
-        if (rc != ACCTEST_STATUS_OK)
-            return rc;
-        iaa_tsk_node = iaa_tsk_node->next;
-    }
+	while (iaa_tsk_node) {
+		iaa_tsk_node->tsk->iaa_compr_flags = 0;
+		rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		iaa_tsk_node = iaa_tsk_node->next;
+	}
+    printf("Starting test\n");
 
     // while(1){
 
         iaa_tsk_node = iaa->multi_task_node;
         while(iaa_tsk_node){
-            iaa_tsk_node->tsk->src1 = malloc(4096);
-            iaa_tsk_node->tsk->src2 = malloc(4096);
             iaa_prep_sub_task_node(iaa, iaa_tsk_node);
             iaa_tsk_node = iaa_tsk_node->next;
         }
+        printf("Done\n");
     // }
 }
 
@@ -165,7 +175,7 @@ int main(int argc, char **argv) {
     CPU_SET(41, &cpus);
     pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
     pthread_create(&chase_thread, &attr, pointer_chase_thread, &memsize);
-
+    
     if (mode == 2) {
         pthread_attr_init(&attr);
         CPU_ZERO(&cpus);
