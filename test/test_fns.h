@@ -418,11 +418,15 @@ int iaa_single_thread_submit_and_collect(void *args) {
 
   iaa = acctest_init(tflags);
   iaa->dev_type = ACCFG_DEVICE_IAX;
-  if (!iaa)
-		return -ENOMEM;
+  if (!iaa){
+		printf("Failed to allocate IAA\n");
+    exit(-1);
+  }
   rc = acctest_alloc(iaa, wq_type, dev_id, wq_id);
-  if (rc < 0)
-		return -ENOMEM;
+  if (rc < 0){
+		printf("Failed to allocate IAA\n");
+    exit(-1);
+  }
   rc = acctest_alloc_multiple_tasks(iaa, wq_depth);
   if (rc != ACCTEST_STATUS_OK)
 		return rc;
@@ -435,6 +439,89 @@ int iaa_single_thread_submit_and_collect(void *args) {
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
 		iaa_tsk_node = iaa_tsk_node->next;
+	}
+  printf("Starting test\n");
+
+  int iter = 1;
+  if (num_descs > wq_depth){
+    iter = num_descs / wq_depth;
+  } else{
+    wq_depth = num_descs;
+  }
+
+  pthread_barrier_wait(&barrier);
+  clock_gettime(CLOCK_MONOTONIC, &times[0]);
+
+  for(int i=0; i<num_iter; i++){
+    for(int i=0; i<num_descs / wq_depth; i++)
+      iaa_submit_and_wait(iaa,wq_depth);
+  }
+  clock_gettime(CLOCK_MONOTONIC, &times[1]);
+
+  uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
+  printf("WQ: %d NumDescs: %d BufSize: %d Throughput: %f GB/s\n",
+    wq_id, num_descs, buf_size, (double)buf_size * num_descs * num_iter / nanos);
+  acctest_free_task(iaa);
+  acctest_free(iaa);
+}
+
+int dsa_iaa_single_thread_submit_and_collect(void *args) {
+  ThreadArgs *threadArgs = (ThreadArgs *)args;
+  int num_descs = threadArgs->num_descs;
+  int buf_size = threadArgs->buf_size;
+  int wq_id = threadArgs->wq_id;
+  struct acctest_context *iaa;
+  struct task_node *iaa_tsk_node;
+	int rc = ACCTEST_STATUS_OK;
+	int tflags = 0x1;
+  int wq_depth = 32;
+  int wq_type = DEDICATED;
+  int iaa_dev_id = 1;
+  int dsa_dev_id = 0;
+  struct acctest_context *dsa;
+  struct task_node *dsa_tsk_node;
+
+  iaa = acctest_init(tflags);
+  iaa->dev_type = ACCFG_DEVICE_IAX;
+  if (!iaa)
+		return -ENOMEM;
+  rc = acctest_alloc(iaa, wq_type, iaa_dev_id, wq_id);
+  if (rc < 0){
+		printf("Failed to allocate DSA\n");
+    exit(-1);
+  }
+  rc = acctest_alloc_multiple_tasks(iaa, wq_depth);
+  if (rc != ACCTEST_STATUS_OK)
+		return rc;
+  printf("Allocated tasks IAA\n");
+  dsa = acctest_init(tflags);
+  rc = acctest_alloc(dsa, 0, 0, wq_id);
+  if(ACCTEST_STATUS_OK != rc){
+    printf("Failed to allocate DSA\n");
+    exit(-1);
+  }
+  dsa->is_batch = 0;
+  rc = acctest_alloc_multiple_tasks(dsa, wq_depth);
+  if (rc != ACCTEST_STATUS_OK)
+		return rc;
+  printf("Allocated tasks DSA\n");
+
+  iaa_tsk_node = iaa->multi_task_node;
+	while (iaa_tsk_node) {
+		iaa_tsk_node->tsk->iaa_compr_flags = 0;
+		rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		iaa_tsk_node = iaa_tsk_node->next;
+	}
+  dsa_tsk_node = dsa->multi_task_node;
+	while (dsa_tsk_node) {
+		dsa_tsk_node->tsk->xfer_size = buf_size;
+
+		rc = dsa_init_task(dsa_tsk_node->tsk, tflags, DSA_OPCODE_MEMMOVE, buf_size);
+		if (rc != ACCTEST_STATUS_OK)
+			return rc;
+		dsa_tsk_node = dsa_tsk_node->next;
 	}
   printf("Starting test\n");
 
