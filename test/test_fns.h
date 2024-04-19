@@ -357,6 +357,10 @@ int dsa_single_thread_submit_and_collect(void *args) {
 
   dsa = acctest_init(tflags);
   rc = acctest_alloc(dsa, 0, 0, wq_id);
+  if(ACCTEST_STATUS_OK != rc){
+    printf("Failed to allocate DSA\n");
+    exit(-1);
+  }
   dsa->is_batch = 0;
   rc = acctest_alloc_multiple_tasks(dsa, wq_depth);
   if (rc != ACCTEST_STATUS_OK)
