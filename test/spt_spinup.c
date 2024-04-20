@@ -731,12 +731,16 @@ int main(int argc, char *argv[])
 			break;
 		case 10:
 			SerialDSASubmitArgs *sArgs;
+			pthread_barrier_init(&barrier, NULL, num_ax);
 			sArgs = malloc(num_ax * sizeof(SerialDSASubmitArgs));
-			sArgs->num_descs = num_desc;
 			sArgs->buf_size = buf_size;
-			sArgs->wq_id = wq_id;
-			sArgs->serialDepth = 1;
-			dsa_single_thread_serialize_granularity(NULL);
+			sArgs->wq_id = 0;
+			sArgs->dev_id = 0;
+			sArgs->wq_depth = 128;
+			sArgs->serialDepth = num_desc;
+
+			dsa_single_thread_serialize_granularity(sArgs);
+			break;
 		default:
 			printf("No Case\n");
 			exit(-1);

@@ -1,26 +1,26 @@
 
 typedef struct {
-    int num_descs;
     int buf_size;
+    int dev_id;
     int wq_id;
     int serialDepth;
+    int wq_depth;
 } SerialDSASubmitArgs;
 
 
 int dsa_single_thread_serialize_granularity(void *args) {
   SerialDSASubmitArgs *threadArgs = (SerialDSASubmitArgs *)args;
-  int num_descs = threadArgs->num_descs;
   int buf_size = threadArgs->buf_size;
   int wq_id = threadArgs->wq_id;
   int submitDepth = threadArgs->serialDepth;
+  int wq_depth = threadArgs->wq_depth;
   struct acctest_context *dsa;
   struct task_node *dsa_tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int tflags = 0x1;
-  int wq_depth = 32;
 
   dsa = acctest_init(tflags);
-  rc = acctest_alloc(dsa, 0, 0, wq_id);
+  rc = acctest_alloc(dsa, 0, threadArgs->dev_id, wq_id);
   if(ACCTEST_STATUS_OK != rc){
     printf("Failed to allocate DSA\n");
     exit(-1);
@@ -58,7 +58,7 @@ int dsa_single_thread_serialize_granularity(void *args) {
 
   uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
   printf("WQ: %d SerializationGranularity: %d BufSize: %d Throughput: %f GB/s\n",
-    wq_id, submitDepth, buf_size, (double)buf_size * num_descs * num_iter / nanos);
+    wq_id, submitDepth, buf_size, (double)buf_size * submitDepth * num_iter / nanos);
   acctest_free_task(dsa);
   acctest_free(dsa);
 }
