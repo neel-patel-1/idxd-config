@@ -759,7 +759,29 @@ int main(int argc, char *argv[])
 				strArgs[i].dev_id = 0;
 				strArgs[i].wq_depth = wq_depth;
 				strArgs[i].serialDepth = num_desc;
-				if (pthread_create(&threads[i], NULL, dsa_streaming_submit, &args[i])) {
+				if (pthread_create(&threads[i], NULL, dsa_streaming_submit, &strArgs[i])) {
+					fprintf(stderr, "Error creating thread\n");
+					return 1;
+				}
+			}
+			for (int i = 0; i < num_ax; i++) {
+				pthread_join(threads[i], (void **)&rt[i]);
+			}
+			break;
+		case 12:
+			SerialDSASubmitArgs *iaaArgs;
+			pthread_barrier_init(&barrier, NULL, num_ax);
+			threads = malloc(num_ax * sizeof(pthread_t));
+			iaaArgs = malloc(num_ax * sizeof(ThreadArgs));
+			rt = malloc(num_ax * sizeof(int));
+			for (int i = 0; i < num_ax; i++) {
+				iaaArgs[i].buf_size = buf_size;
+				iaaArgs[i].wq_id = i;
+				iaaArgs[i].buf_size = buf_size;
+				iaaArgs[i].wq_depth = wq_depth;
+				iaaArgs[i].serialDepth = num_desc;
+				iaaArgs[i].dev_id = 1;
+				if (pthread_create(&threads[i], NULL, iaa_streaming_submit, &iaaArgs[i])) {
 					fprintf(stderr, "Error creating thread\n");
 					return 1;
 				}
