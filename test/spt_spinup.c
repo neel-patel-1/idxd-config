@@ -528,6 +528,7 @@ void round_robin_poll(void *arg){
 
 #include "test_fns.h"
 #include "test_fns_2.h"
+#include "streaming_fns.h"
 
 int main(int argc, char *argv[])
 {
@@ -740,6 +741,18 @@ int main(int argc, char *argv[])
 			sArgs->serialDepth = num_desc;
 
 			dsa_single_thread_serialize_granularity(sArgs);
+			break;
+		case 11:
+			SerialDSASubmitArgs *strArgs;
+			pthread_barrier_init(&barrier, NULL, num_ax);
+			strArgs = malloc(num_ax * sizeof(SerialDSASubmitArgs));
+			strArgs->buf_size = buf_size;
+			strArgs->wq_id = 0;
+			strArgs->dev_id = 0;
+			strArgs->wq_depth = 128;
+			strArgs->serialDepth = num_desc;
+
+			dsa_streaming_submit(strArgs);
 			break;
 		default:
 			printf("No Case\n");
