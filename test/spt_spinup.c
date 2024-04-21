@@ -759,7 +759,7 @@ int main(int argc, char *argv[])
 				strArgs[i].dev_id = 0;
 				strArgs[i].wq_depth = wq_depth;
 				strArgs[i].serialDepth = num_desc;
-				if (pthread_create(&threads[i], NULL, dsa_streaming_submit, &args[i])) {
+				if (pthread_create(&threads[i], NULL, dsa_streaming_submit, &strArgs[i])) {
 					fprintf(stderr, "Error creating thread\n");
 					return 1;
 				}
