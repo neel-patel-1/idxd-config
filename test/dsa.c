@@ -470,7 +470,7 @@ int init_cflush(struct task *tsk, int tflags, int opcode, unsigned long xfer_siz
 
 /* this function is re-used by batch task */
 int dsa_init_task(struct task *tsk, int tflags, int opcode,
-	      unsigned long xfer_size)
+			unsigned long xfer_size)
 {
 	int rc = 0;
 
@@ -1566,7 +1566,7 @@ int task_result_verify(struct task *tsk, int mismatch_expected)
 {
 	int rc;
 
-	info("verifying task result for %#lx\n", tsk);
+	// info("verifying task result for %#lx\n", tsk);
 
 	if (tsk->comp->status != DSA_COMP_SUCCESS)
 		return tsk->comp->status;
@@ -1629,7 +1629,7 @@ int task_result_verify_task_nodes(struct acctest_context *ctx, int mismatch_expe
 {
 	struct task_node *tsk_node = ctx->multi_task_node;
 	int ret = ACCTEST_STATUS_OK;
-
+	info("Verifying task results\n");
 	while (tsk_node) {
 		ret = task_result_verify(tsk_node->tsk, mismatch_expected);
 		if (ret != ACCTEST_STATUS_OK) {
