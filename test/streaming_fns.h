@@ -94,10 +94,6 @@ static inline void iaa_streaming_submission(struct acctest_context *iaa, int num
   struct task_node *next_to_complete = iaa->multi_task_node;
   while(tsk_node){
     iaa_wait_compress(iaa, next_to_complete->tsk);
-    if (ACCTEST_STATUS_OK != iaa_task_result_verify(next_to_complete->tsk, 0)){
-      printf("Fail\n");
-      exit(-1);
-    }
     next_to_complete = next_to_complete->next;
 		acctest_desc_submit(iaa, tsk_node->tsk->desc);
     tsk_node = tsk_node->next;
@@ -108,11 +104,12 @@ static inline void iaa_streaming_submission(struct acctest_context *iaa, int num
   /* Collect last batch */
   while(next_to_complete){
     iaa_wait_compress(iaa, next_to_complete->tsk);
-    if (ACCTEST_STATUS_OK != task_result_verify(next_to_complete->tsk, 0)){
-      printf("Fail\n");
-      exit(-1);
-    }
     next_to_complete = next_to_complete->next;
+  }
+
+  rc = iaa_task_result_verify_task_nodes(iaa, 0);
+  if (rc != ACCTEST_STATUS_OK){
+    return rc;
   }
 
   return 0;
@@ -180,6 +177,7 @@ int iaa_streaming_submit(void *args) {
 	int tflags = 0x1;
 
   iaa = acctest_init(tflags);
+  iaa->dev_type = ACCFG_DEVICE_IAX;
   rc = acctest_alloc(iaa, 0, threadArgs->dev_id, wq_id);
   if(ACCTEST_STATUS_OK != rc){
     printf("Failed to allocate IAA\n");
