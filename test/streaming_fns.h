@@ -89,9 +89,7 @@ static inline void iaa_streaming_submission(struct acctest_context *iaa, int num
   while(tsk_node){
     iaa_wait_compress(iaa, next_to_complete->tsk);
     next_to_complete = next_to_complete->next;
-    if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
-			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
-		acctest_desc_submit(dsa, tsk_node->tsk->desc);
+		acctest_desc_submit(iaa, tsk_node->tsk->desc);
     tsk_node = tsk_node->next;
     // submitted++;
   }
@@ -99,7 +97,7 @@ static inline void iaa_streaming_submission(struct acctest_context *iaa, int num
 
   /* Collect last batch */
   while(next_to_complete){
-    iaa_wait_compress(iaa, tsk_node->tsk);
+    iaa_wait_compress(iaa, next_to_complete->tsk);
     next_to_complete = next_to_complete->next;
   }
 
@@ -162,31 +160,31 @@ int iaa_streaming_submit(void *args) {
   int wq_id = threadArgs->wq_id;
   int submitDepth = threadArgs->serialDepth;
   int wq_depth = threadArgs->wq_depth;
-  struct acctest_context *dsa;
-  struct task_node *dsa_tsk_node;
+  struct acctest_context *iaa;
+  struct task_node *iaa_tsk_node;
 	int rc = ACCTEST_STATUS_OK;
 	int tflags = 0x1;
 
-  dsa = acctest_init(tflags);
-  rc = acctest_alloc(dsa, 0, threadArgs->dev_id, wq_id);
+  iaa = acctest_init(tflags);
+  rc = acctest_alloc(iaa, 0, threadArgs->dev_id, wq_id);
   if(ACCTEST_STATUS_OK != rc){
-    printf("Failed to allocate DSA\n");
+    printf("Failed to allocate IAA\n");
     exit(-1);
   }
-  dsa->is_batch = 0;
-  rc = acctest_alloc_multiple_tasks(dsa, submitDepth);
+  iaa->is_batch = 0;
+  rc = acctest_alloc_multiple_tasks(iaa, submitDepth);
   if (rc != ACCTEST_STATUS_OK)
 		return rc;
   printf("Allocated tasks\n");
 
-  dsa_tsk_node = dsa->multi_task_node;
-	while (dsa_tsk_node) {
-		dsa_tsk_node->tsk->xfer_size = buf_size;
+  iaa_tsk_node = iaa->multi_task_node;
+	while (iaa_tsk_node) {
+		iaa_tsk_node->tsk->xfer_size = buf_size;
 
-		rc = iaa_init_task(dsa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
+		rc = iaa_init_task(iaa_tsk_node->tsk, tflags, IAX_OPCODE_COMPRESS, buf_size);
 		if (rc != ACCTEST_STATUS_OK)
 			return rc;
-		dsa_tsk_node = dsa_tsk_node->next;
+		iaa_tsk_node = iaa_tsk_node->next;
 	}
   printf("Starting test\n");
   printf("wq_depth: %d\n", wq_depth);
@@ -195,13 +193,13 @@ int iaa_streaming_submit(void *args) {
   pthread_barrier_wait(&barrier);
   clock_gettime(CLOCK_MONOTONIC, &times[0]);
   for(int i=0; i<num_iter; i++){
-      iaa_streaming_submission(dsa,submitDepth, wq_depth);
+      iaa_streaming_submission(iaa,submitDepth, wq_depth);
   }
   clock_gettime(CLOCK_MONOTONIC, &times[1]);
 
   uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
   printf("WQ: %d SerializationGranularity: %d BufSize: %d Throughput: %f GB/s\n",
     wq_id, submitDepth, buf_size, (double)buf_size * submitDepth * num_iter / nanos);
-  acctest_free_task(dsa);
-  acctest_free(dsa);
+  acctest_free_task(iaa);
+  acctest_free(iaa);
 }
