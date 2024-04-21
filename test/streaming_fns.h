@@ -30,6 +30,12 @@ static inline void dsa_streaming_submission(struct acctest_context *dsa, int num
   struct task_node *next_to_complete = dsa->multi_task_node;
   while(tsk_node){
     dsa_wait_memcpy(dsa, next_to_complete->tsk);
+    #ifdef DEBUG
+    if (ACCTEST_STATUS_OK != task_result_verify(tsk_node->tsk, 0)){
+      printf("Fail\n");
+      exit(-1);
+    }
+    #endif
     next_to_complete = next_to_complete->next;
     if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
 			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
@@ -88,6 +94,10 @@ static inline void iaa_streaming_submission(struct acctest_context *iaa, int num
   struct task_node *next_to_complete = iaa->multi_task_node;
   while(tsk_node){
     iaa_wait_compress(iaa, next_to_complete->tsk);
+    if (ACCTEST_STATUS_OK != iaa_task_result_verify(next_to_complete->tsk, 0)){
+      printf("Fail\n");
+      exit(-1);
+    }
     next_to_complete = next_to_complete->next;
 		acctest_desc_submit(iaa, tsk_node->tsk->desc);
     tsk_node = tsk_node->next;
@@ -98,6 +108,10 @@ static inline void iaa_streaming_submission(struct acctest_context *iaa, int num
   /* Collect last batch */
   while(next_to_complete){
     iaa_wait_compress(iaa, next_to_complete->tsk);
+    if (ACCTEST_STATUS_OK != task_result_verify(next_to_complete->tsk, 0)){
+      printf("Fail\n");
+      exit(-1);
+    }
     next_to_complete = next_to_complete->next;
   }
 

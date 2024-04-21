@@ -3,7 +3,7 @@ SIZES=(1024 2048 4096 8192 16384 32768 65536 131072 262144 524288 1048576)
 DESCS=(256 128 64 32 16 8 4 2 1 1 1)
 AXS=(4 4 4 4 4 4 4 4 4 2 1)
 ctr=0
-sudo ./../setup_dsa.sh micro-config.cfg
+sudo ./../setup_dsa.sh shared-engine.cfg
 
 for i in "${SIZES[@]}"; do
 	wq_depth=$(( 128 / ${AXS[$ctr]} ))

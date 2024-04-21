@@ -288,10 +288,12 @@ static inline void dsa_submit_and_wait(struct acctest_context *dsa, int wq_depth
   tsk_node = start_tsk_node;
   while(tsk_node && retrieved < wq_depth){
     dsa_wait_memcpy(dsa, tsk_node->tsk);
-    // if (ACCTEST_STATUS_OK != task_result_verify_memcpy(tsk_node->tsk, 0)){
-    //   printf("Fail\n");
-    //   exit(-1);
-    // }
+    #ifdef DEBUG
+    if (ACCTEST_STATUS_OK != task_result_verify(tsk_node->tsk, 0)){
+      printf("Fail\n");
+      exit(-1);
+    }
+    #endif
     tsk_node = tsk_node->next;
     retrieved ++;
   }
@@ -335,10 +337,10 @@ static inline void iaa_submit_and_wait(struct acctest_context *iaa, int wq_depth
   tsk_node = start_tsk_node;
   while(tsk_node && retrieved < wq_depth){
     iaa_wait_compress(iaa, tsk_node->tsk);
-    // if (ACCTEST_STATUS_OK != task_result_verify_memcpy(tsk_node->tsk, 0)){
-    //   printf("Fail\n");
-    //   exit(-1);
-    // }
+    if (ACCTEST_STATUS_OK != iaa_task_result_verify(tsk_node->tsk, 0)){
+      printf("Fail\n");
+      exit(-1);
+    }
     tsk_node = tsk_node->next;
     retrieved ++;
   }
