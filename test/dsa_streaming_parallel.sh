@@ -5,9 +5,10 @@ AXS=(4 4 4 4 4 4 4 4 4 2 1)
 ctr=0
 for i in "${SIZES[@]}"; do
 	sudo ./../setup_dsa.sh -d dsa0
-	for j in `seq 0 ${AXS[$ctr]}`;
+	for j in `seq 0 $(( ${AXS[$ctr]} - 1 ))`;
 	do
-			sudo ./../setup_dsa.sh -d dsa0 -g$j -w1 -q$j -s$(( 128 / ${AXS[$ctr]} )) -md -e1 -b0;
+		echo "sudo ./../setup_dsa.sh -d dsa0 -g$j -w1 -q$j -s$(( 128 / ${AXS[$ctr]} )) -md -e1 -b0;"
+		sudo ./../setup_dsa.sh -d dsa0 -g$j -w1 -q$j -s$(( 128 / ${AXS[$ctr]} )) -md -e1 -b0;
 	done
 	sudo ./../setup_dsa.sh -d dsa0 -b1
 
