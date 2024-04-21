@@ -533,7 +533,8 @@ void round_robin_poll(void *arg){
 int main(int argc, char *argv[])
 {
 	int rc = 0;
-	int wq_type = SHARED;
+	int wq_type = DEDICATED;
+	int wq_depth = 32;
 	int opt;
 	int tflags = TEST_FLAGS_BOF;
 	int wq_id = ACCTEST_DEVICE_ID_NO_INPUT;
@@ -579,6 +580,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'p':
 			buf_size = strtoul(optarg, NULL, 0);
+			break;
+		case 'l':
+			wq_depth = strtoul(optarg, NULL, 0);
 			break;
 		case 'a':
 			num_ax = strtoul(optarg, NULL, 0);
@@ -745,14 +749,24 @@ int main(int argc, char *argv[])
 		case 11:
 			SerialDSASubmitArgs *strArgs;
 			pthread_barrier_init(&barrier, NULL, num_ax);
-			strArgs = malloc(num_ax * sizeof(SerialDSASubmitArgs));
-			strArgs->buf_size = buf_size;
-			strArgs->wq_id = 0;
-			strArgs->dev_id = 0;
-			strArgs->wq_depth = 128;
-			strArgs->serialDepth = num_desc;
-
-			dsa_streaming_submit(strArgs);
+			threads = malloc(num_ax * sizeof(pthread_t));
+			strArgs = malloc(num_ax * sizeof(ThreadArgs));
+			rt = malloc(num_ax * sizeof(int));
+			for (int i = 0; i < num_ax; i++) {
+				strArgs[i].buf_size = buf_size;
+				strArgs[i].wq_id = i;
+				strArgs[i].buf_size = buf_size;
+				strArgs[i].dev_id = 0;
+				strArgs[i].wq_depth = wq_depth;
+				strArgs[i].serialDepth = num_desc;
+				if (pthread_create(&threads[i], NULL, dsa_streaming_submit, &args[i])) {
+					fprintf(stderr, "Error creating thread\n");
+					return 1;
+				}
+			}
+			for (int i = 0; i < num_ax; i++) {
+				pthread_join(threads[i], (void **)&rt[i]);
+			}
 			break;
 		default:
 			printf("No Case\n");
