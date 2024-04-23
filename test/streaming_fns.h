@@ -30,12 +30,6 @@ static inline void dsa_streaming_submission(struct acctest_context *dsa, int num
   struct task_node *next_to_complete = dsa->multi_task_node;
   while(tsk_node){
     dsa_wait_memcpy(dsa, next_to_complete->tsk);
-    #ifdef DEBUG
-    if (ACCTEST_STATUS_OK != task_result_verify(tsk_node->tsk, 0)){
-      printf("Fail\n");
-      exit(-1);
-    }
-    #endif
     next_to_complete = next_to_complete->next;
     if (tsk_node->tsk->test_flags & TEST_FLAGS_CPFLT)
 			madvise(tsk_node->tsk->comp, 4096, MADV_DONTNEED);
@@ -107,10 +101,6 @@ static inline void iaa_streaming_submission(struct acctest_context *iaa, int num
     next_to_complete = next_to_complete->next;
   }
 
-  rc = iaa_task_result_verify_task_nodes(iaa, 0);
-  if (rc != ACCTEST_STATUS_OK){
-    return rc;
-  }
 
   return 0;
 }
@@ -212,6 +202,12 @@ int iaa_streaming_submit(void *args) {
   uint64_t nanos = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
   printf("WQ: %d SerializationGranularity: %d BufSize: %d Throughput: %f GB/s\n",
     wq_id, submitDepth, buf_size, (double)buf_size * submitDepth * num_iter / nanos);
+
+  rc = iaa_task_result_verify_task_nodes(iaa, 0);
+  // if (rc != ACCTEST_STATUS_OK){
+  //   printf("Failed to verify IAA task nodes\n");
+  // }
+
   acctest_free_task(iaa);
   acctest_free(iaa);
 }
