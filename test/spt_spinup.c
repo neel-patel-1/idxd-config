@@ -58,6 +58,7 @@ void *host_operation_thread(void *arg);
 int shuffle_host_op(void *buffer, size_t size);
 int stencil(void *buffer, size_t size);
 int book_keeping(void *buffer, size_t size);
+int btree_update(void *buffer, size_t size);
 
 static int setup_dsa_iaa(int num_desc) {
 	struct task_node *dsa_tsk_node, *iaa_tsk_node;
@@ -102,6 +103,8 @@ int (*select_host_op(int host_op_sel))(void *buffer, size_t size){
 			return shuffle_host_op;
 		case 2:
 			return stencil;
+		case 3:
+			return btree_update;
 		default:
 			return book_keeping;
 	}
@@ -151,27 +154,11 @@ to file, there are often small, unrelated book-keeping operations
 between the two accelerated operations. - https://dl-acm-org.www2.lib.ku.edu/doi/pdf/10.1145/3579371.3589074*/
 
 int book_keeping(void *buffer, size_t size) {
-		typedef struct {
-			int key;
-			int val;
-			struct Node *left, *right;
-		} Node;
-
-	    // Find index of first key greater than or equal to k
-		int *vals = *(int *)buffer;
-		Node head;
-		Node *top = &(head);
-		for(int i=0; i<10; i++){
-			top->left = (Node *)malloc(sizeof(Node));
-			top->right = (Node *)malloc(sizeof(Node));
-			Node *temp = top->left;
-			temp->key = vals[i];
-			temp->val = vals[i+1];
-			temp = top->right;
-			temp->key = vals[i+2];
-			temp->val = vals[i+3];
-		}
-
+	uint8_t deflate_header = 0x78;
+	uint8_t deflate_footer = 0x9C;
+	uint8_t *buf = (uint8_t *)buffer;
+	buf[0] = deflate_header;
+	buf[size - 1] = deflate_footer;
 }
 
 struct Node *bTreeRoot = NULL;
