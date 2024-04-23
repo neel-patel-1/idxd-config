@@ -26,7 +26,11 @@ void createKWorkers(opRing ***pRings, int numKWorkers, int startCPU){
 		pKArgs[i] = kArgs;
     pthread_mutex_init(&ring->lock, NULL);
 
-    pthread_create(&cbTd, NULL, app_worker_thread, (void *)kArgs);
+		pthread_attr_t attrs;
+		pthread_attr_init(&attrs);
+		pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_JOINABLE);
+
+    pthread_create(&cbTd, &attrs, app_worker_thread, (void *)kArgs);
 		kWorkers[i] = cbTd;
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);

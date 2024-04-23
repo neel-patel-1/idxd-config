@@ -253,7 +253,7 @@ void *app_worker_thread(void *arg){
 
 			}
 	}
-	return NULL;
+	pthread_exit(NULL);
 
 }
 
