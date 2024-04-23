@@ -12,6 +12,7 @@
 #include "iaa.h"
 #include "algorithms/iaa_filter.h"
 #include "util.h"
+#include "utils.h"
 #include <math.h>
 #include <pthread.h>
 #include <pth.h>
@@ -171,6 +172,18 @@ int book_keeping(void *buffer, size_t size) {
 			temp->val = vals[i+3];
 		}
 
+}
+
+struct Node *bTreeRoot = NULL;
+int btree_update(void *buffer, size_t size){
+	uint8_t new_val, new_key;
+	new_val = ((uint8_t *)(buffer))[size];
+	new_key = new_val >> 4;
+	if(bTreeRoot == NULL){
+		bTreeRoot = create_node();
+	} else {
+		insert(bTreeRoot, new_key);
+	}
 }
 
 void *dsa_submit(void *arg) {
