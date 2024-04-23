@@ -341,10 +341,7 @@ void submit_poll_hostop_submit_poll(void *arg){
 	/* submit */
 	int rc = 0;
 	clock_gettime(CLOCK_MONOTONIC, &times[0]);
-	int num_iter = 100;
-	for(int i= 0; i<num_iter; i++){
-		intermediate_host_ops_complete = false; /* reset shared synchronization variables */
-		finalHostOpCtr = 0;
+
 
 		rc = dsa_memcpy_submit_task_nodes(dsa);
 		if (rc != ACCTEST_STATUS_OK)
@@ -386,7 +383,7 @@ void submit_poll_hostop_submit_poll(void *arg){
 
         dsa_tsk_node = dsa_tsk_node->next;
         iaa_tsk_node = iaa_tsk_node->next;
-    }
+		}
 
 		iaa_tsk_node = iaa->multi_task_node;
 		while(iaa_tsk_node) {
@@ -397,7 +394,7 @@ void submit_poll_hostop_submit_poll(void *arg){
         iaa_tsk_node = iaa_tsk_node->next;
     }
 		while( !intermediate_host_ops_complete ){}
-	}
+
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
     pthread_exit((void *)ACCTEST_STATUS_OK);
 
@@ -626,20 +623,35 @@ int main(int argc, char *argv[])
 			acctest_free_task(iaa);
 			break;
 		case 1: /* single serial submit, poll, host op, submit ...*/
-			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
-			pthread_t submit_poll_hostop_submit_poll_thread;
-			CPU_ZERO(&cpuset);
-			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
+			for (int i=0; i<num_iter; i++){
+					intermediate_host_ops_complete = false; /* reset shared synchronization variables */
+					finalHostOpCtr = 0;
 
-			pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
-			pthread_setaffinity_np(submit_poll_hostop_submit_poll_thread, sizeof(cpu_set_t), &cpuset);
-			pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
+				init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
+				pthread_t submit_poll_hostop_submit_poll_thread;
+				CPU_ZERO(&cpuset);
+				CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
+
+				pthread_create(&submit_poll_hostop_submit_poll_thread, NULL, submit_poll_hostop_submit_poll, NULL);
+				pthread_setaffinity_np(submit_poll_hostop_submit_poll_thread, sizeof(cpu_set_t), &cpuset);
+				pthread_join(submit_poll_hostop_submit_poll_thread, (void **)&rc0);
+				lats[i] = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
+			}
+			lat = 0;
+			for (int i=0; i<num_iter; i++){
+				lat += lats[i];
+			}
+			lat = lat / num_iter;
+			printf("Throughput: %f GB/s\n", (double)buf_size * num_desc / lat) / num_iter;
 			acctest_free_task(dsa);
 			acctest_free_task(iaa);
 			break;
+
 		case 2: /* single serial submit, poll, parallelized host op, submit ...*/
 
 			for (int i=0; i<num_iter; i++){
+				intermediate_host_ops_complete = false; /* reset shared synchronization variables */
+				finalHostOpCtr = 0;
 				init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
 				parallelTdOps *pTdOps = malloc(sizeof(parallelTdOps));
 				pTdOps->nKWorkers = nKWorkers;
