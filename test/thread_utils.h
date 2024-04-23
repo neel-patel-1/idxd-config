@@ -5,8 +5,12 @@ typedef struct{
   int nKWorkers;
 } parallelTdOps;
 
+pthread_t *kWorkers =NULL;
+kWorkerArgs **pKArgs = NULL;
 void createKWorkers(opRing ***pRings, int numKWorkers, int startCPU){
   pthread_t cbTd;
+	kWorkers = malloc(sizeof(pthread_t) * numKWorkers);
+	pKArgs = malloc(sizeof(kWorkerArgs*) * numKWorkers);
   opRing **rings = NULL;
   kWorkerArgs *kArgs;
   opRing *ring;
@@ -18,9 +22,12 @@ void createKWorkers(opRing ***pRings, int numKWorkers, int startCPU){
     kArgs = malloc(sizeof(kWorkerArgs));
     memset(kArgs, 0, sizeof(kWorkerArgs));
     kArgs->ring = ring;
+		kArgs->cancelled = 0;
+		pKArgs[i] = kArgs;
     pthread_mutex_init(&ring->lock, NULL);
 
     pthread_create(&cbTd, NULL, app_worker_thread, (void *)kArgs);
+		kWorkers[i] = cbTd;
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(startCPU+i, &cpuset);
@@ -29,6 +36,13 @@ void createKWorkers(opRing ***pRings, int numKWorkers, int startCPU){
 
   }
   *pRings = rings;
+}
+
+void joinKWorkers(int numKWorkers){
+	for(int i=0; i< numKWorkers; i++){
+		pKArgs[i]->cancelled = 1;
+		pthread_join(kWorkers[i], NULL);
+	}
 }
 
 

@@ -128,7 +128,8 @@ int stencil(void *buffer, size_t size){
 						inpBuf[i][j] = ptr[i * width + j];
 				}
 		}
-
+	int iter = 100;
+	for( int i=0; i< iter; i++){
 	for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
             int sum = 0;
@@ -140,7 +141,9 @@ int stencil(void *buffer, size_t size){
             output[y][x] = sum;
         }
     }
-	return count;
+	}
+
+	return output[0][0];
 }
 int shuffle_host_op(void *buffer, size_t size){
 	shuffle_elements(buffer, size);
@@ -208,6 +211,7 @@ typedef struct {
 
 typedef struct {
     opRing *ring;
+		_Atomic int cancelled;
 } kWorkerArgs;
 
 void enqueue(opRing *ring, void *op) {
@@ -241,7 +245,8 @@ void *app_worker_thread(void *arg){
 	info("App worker thread created\n");
 
 	kWorkerArgs *args = (kWorkerArgs *)arg;
-	while (1) {
+
+	while (!args->cancelled) {
 			host_op_args *arg = (host_op_args *)dequeue(args->ring);
 			if (arg != NULL) {
 				host_operation_thread(arg);
@@ -467,6 +472,7 @@ void parallel_host_ops(void *arg){
     }
 		while( !intermediate_host_ops_complete ){}
 		clock_gettime(CLOCK_MONOTONIC, &times[1]);
+		joinKWorkers(numKWorkers);
     pthread_exit((void *)ACCTEST_STATUS_OK);
 
 }
@@ -591,7 +597,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
-
+	unsigned int lats[num_iter];
 	cpu_set_t cpuset;
 	switch (test_config){ /* dedicated full batch submit, dedicated poll + host op + submit ...*/
 		case 0:
@@ -632,16 +638,26 @@ int main(int argc, char *argv[])
 			acctest_free_task(iaa);
 			break;
 		case 2: /* single serial submit, poll, parallelized host op, submit ...*/
-			init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
-			parallelTdOps *pTdOps = malloc(sizeof(parallelTdOps));
-			pTdOps->nKWorkers = nKWorkers;
-			pthread_t single_core_parallelized_host_ops;
-			CPU_ZERO(&cpuset);
-			CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
 
-			pthread_create(&single_core_parallelized_host_ops, NULL, parallel_host_ops, (void *)pTdOps);
-			pthread_setaffinity_np(single_core_parallelized_host_ops, sizeof(cpu_set_t), &cpuset);
-			pthread_join(single_core_parallelized_host_ops, (void **)&rc0);
+			for (int i=0; i<num_iter; i++){
+				init_iaa_dsa_task_nodes(&dsa,&iaa, buf_size, num_desc, tflags, wq_type, dev_id, wq_id);
+				parallelTdOps *pTdOps = malloc(sizeof(parallelTdOps));
+				pTdOps->nKWorkers = nKWorkers;
+				pthread_t single_core_parallelized_host_ops;
+				CPU_ZERO(&cpuset);
+				CPU_SET(SINGLE_SERIAL_CORE, &cpuset);
+
+				pthread_create(&single_core_parallelized_host_ops, NULL, parallel_host_ops, (void *)pTdOps);
+				pthread_setaffinity_np(single_core_parallelized_host_ops, sizeof(cpu_set_t), &cpuset);
+				pthread_join(single_core_parallelized_host_ops, (void **)&rc0);
+				lats[i] = (times[1].tv_sec - times[0].tv_sec) * 1000000000 + times[1].tv_nsec - times[0].tv_nsec;
+			}
+			lat = 0;
+			for (int i=0; i<num_iter; i++){
+				lat += lats[i];
+			}
+			lat = lat / num_iter;
+			printf("Throughput: %f GB/s\n", (double)buf_size * num_desc / lat) / num_iter;
 			acctest_free_task(dsa);
 			acctest_free_task(iaa);
 			break;
