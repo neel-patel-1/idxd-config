@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /* Copyright(c) 2022 Intel Corporation. All rights reserved. */
+#ifndef CRC_LOOKUP
+#define CRC_LOOKUP
 const unsigned long crc32_lookup[8][256] = {
 {
 0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4, 0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
@@ -349,3 +351,5 @@ static const unsigned long crc32c_table[256] = {
 0x79B737BAL, 0x8BDCB4B9L, 0x988C474DL, 0x6AE7C44EL,
 0xBE2DA0A5L, 0x4C4623A6L, 0x5F16D052L, 0xAD7D5351L
 };
+
+#endif

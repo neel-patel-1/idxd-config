@@ -346,7 +346,7 @@ static int test_dif(struct acctest_context *ctx, size_t buf_size,
 			tsk_node->tsk->xfer_size = buf_size;
 			tsk_node->tsk->blk_idx_flg = get_dif_blksz_flg(tsk_node->tsk->xfer_size);
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
+			rc = dsa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -473,7 +473,7 @@ static int test_memory(struct acctest_context *ctx, size_t buf_size,
 		while (tsk_node) {
 			tsk_node->tsk->xfer_size = buf_size;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
+			rc = dsa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -644,7 +644,7 @@ static int test_delta(struct acctest_context *ctx, size_t buf_size,
 		while (tsk_node) {
 			tsk_node->tsk->xfer_size = buf_size;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
+			rc = dsa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 
@@ -714,7 +714,7 @@ static int test_crc(struct acctest_context *ctx, size_t buf_size,
 		while (tsk_node) {
 			tsk_node->tsk->xfer_size = buf_size;
 
-			rc = init_task(tsk_node->tsk, tflags, opcode, buf_size);
+			rc = dsa_init_task(tsk_node->tsk, tflags, opcode, buf_size);
 			if (rc != ACCTEST_STATUS_OK)
 				return rc;
 

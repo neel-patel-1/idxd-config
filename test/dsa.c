@@ -469,7 +469,7 @@ int init_cflush(struct task *tsk, int tflags, int opcode, unsigned long xfer_siz
 }
 
 /* this function is re-used by batch task */
-int init_task(struct task *tsk, int tflags, int opcode,
+int dsa_init_task(struct task *tsk, int tflags, int opcode,
 	      unsigned long xfer_size)
 {
 	int rc = 0;
@@ -642,7 +642,7 @@ int init_batch_task(struct batch_task *btsk, int task_num, int tflags,
 		else
 			btsk->sub_tasks[i].comp = &btsk->sub_comps[i];
 		btsk->sub_tasks[i].dflags = dflags;
-		rc = init_task(&btsk->sub_tasks[i], tflags, opcode, xfer_size);
+		rc = dsa_init_task(&btsk->sub_tasks[i], tflags, opcode, xfer_size);
 		if (rc != ACCTEST_STATUS_OK) {
 			err("batch: init sub-task failed\n");
 			return rc;
