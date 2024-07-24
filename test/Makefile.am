@@ -45,3 +45,8 @@ iaa_test_SOURCES = iaa_test.c iaa.c iaa_prep.c accel_test.c \
 		   algorithms/iaa_crc64.c algorithms/iaa_zcompress.c algorithms/iaa_compress.c \
 		   algorithms/iaa_filter.c algorithms/iaa_crypto.c
 iaa_test_LDADD = $(LIBACCFG_LIB) $(UUID_LIBS)
+
+lib_LIBRARIES = libiaa.a
+libiaa_a_SOURCES = iaa.c iaa_prep.c accel_test.c \
+		algorithms/iaa_crc64.c algorithms/iaa_zcompress.c algorithms/iaa_compress.c \
+		algorithms/iaa_filter.c algorithms/iaa_crypto.c
