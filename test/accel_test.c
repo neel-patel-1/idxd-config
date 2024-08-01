@@ -372,7 +372,6 @@ int acctest_wait_on_desc_timeout(struct completion_record *comp,
 			j = msec_timeout;
 	}
 
-	dump_compl_rec(comp, ctx->compl_size);
 
 	return (j == msec_timeout) ? -EAGAIN : 0;
 }

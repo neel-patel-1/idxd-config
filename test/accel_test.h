@@ -168,6 +168,8 @@ struct acctest_context {
 	};
 };
 
+struct completion_record;
+
 static inline void vprint_log(const char *tag, const char *msg, va_list args)
 {
 	printf("[%5s] ", tag);
@@ -222,7 +224,7 @@ static inline void dbg(const char *msg, ...)
 /* Dump hardware descriptor to log */
 static inline void dump_desc(struct hw_desc *hw)
 {
-	struct raw_desc *rhw = (void *)hw;
+	struct raw_desc *rhw = (struct raw_desc *)hw;
 	int i;
 
 	dbg("desc addr: %p\n", hw);
@@ -232,18 +234,18 @@ static inline void dump_desc(struct hw_desc *hw)
 }
 
 /* Dump completion record to log */
-static inline void dump_compl_rec(struct completion_record *compl, int compl_size)
-{
-	int i;
-	struct raw_completion_record *rcompl = (void *)compl;
-	int num_qword = compl_size / sizeof(uint64_t);
+// static inline void dump_compl_rec(struct completion_record *compl, int compl_size)
+// {
+// 	int i;
+// 	struct raw_completion_record *rcompl = (void *)compl;
+// 	int num_qword = compl_size / sizeof(uint64_t);
 
-	dbg("completion record addr: %p\n", compl);
+// 	dbg("completion record addr: %p\n", compl);
 
-	/* To be compatible with IAX, completion record was allocated 64 bytes*/
-	for (i = 0; i < num_qword; i++)
-		dbg("compl[%d]: 0x%016lx\n", i, rcompl->field[i]);
-}
+// 	/* To be compatible with IAX, completion record was allocated 64 bytes*/
+// 	for (i = 0; i < num_qword; i++)
+// 		dbg("compl[%d]: 0x%016lx\n", i, rcompl->field[i]);
+// }
 
 /* Dump src2 to log */
 static inline void dump_src2(void *src2, int src2_size)

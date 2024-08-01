@@ -52,11 +52,11 @@ static inline void dump_sub_compl_rec(struct batch_task *btsk, int compl_size)
 	int i;
 
 	for (i = 0; i < btsk->task_num; i++) {
-		dbg("sub_comp[%d]:\n", i);
-		if (btsk->edl && !btsk->edl->di[i].cp_wr_fail)
-			dump_compl_rec(btsk->sub_tasks[i].comp, compl_size);
-		else
-			dbg("comp address mmap'ed PROT_NONE\n");
+		// dbg("sub_comp[%d]:\n", i);
+		// if (btsk->edl && !btsk->edl->di[i].cp_wr_fail)
+		// 	// dump_compl_rec(btsk->sub_tasks[i].comp, compl_size);
+		// else
+		// 	dbg("comp address mmap'ed PROT_NONE\n");
 	}
 }
 
